@@ -18,5 +18,19 @@
   "homepage": "https://github.com/CaisanLi/zxj-micro#readme",
   "dependencies": {
     "@micro-zoe/micro-app": "^0.2.2"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "plugin:vue/essential",
+      "eslint:recommended"
+    ],
+    "parserOptions": {
+      "parser": "babel-eslint"
+    },
+    "rules": {}
   }
 }
