@@ -1,9 +1,13 @@
+import axios from 'axios';
+
 /**
  * 拉取资源
  * @param url 
  */
 export function fetchResource (url) {
-    return fetch(url).then(res => res.text());
+    return axios.get(url).then(res => {
+        return res.data;
+    });
 }
 
 /**
@@ -16,4 +20,17 @@ export function getUrlHost(url) {
     const result = hostReg.exec(url);
     if(!result) return '';
     return result[0];
+}
+
+/**
+ * 获取URL
+ * @param {*} url 
+ */
+export function getUrl(url) {
+    const reg = /(^www\.[^/]+[\da-zA-Z])|(^http[s]?:\/\/[^/]+[\d]+)/;
+    if(reg.test(url)) {
+        return url;
+    }
+    const { origin, port } = window.location;
+    return `${origin}${ port ? ':' + port : '' }${url}`;
 }

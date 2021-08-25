@@ -1,7 +1,7 @@
-import { MicroApp } from './index';
+import { MicroApp } from './app';
 export default {
     name: 'MicroApp',
-    data() {
+    data: function data() {
         return {
             children: '',
             app: null
@@ -19,12 +19,15 @@ export default {
     },
     mounted() {
         const { name, url } = this;
-        const app = new MicroApp(name, url);
+        const app = new MicroApp();
         this.app = app;
-        app.start();
+        app.start(name, url);
+    },
+    beforeDestroy: function beforeDestroy() {
+        this.app.destroy();
     },
     render(h) {
-        const { name } = this;
+        var name = this.name;
         return h('div', {
             // attribute
             attrs: {

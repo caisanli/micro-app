@@ -1,24 +1,27 @@
 {
   "name": "zxj-micro",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
-  "main": "./src/index.js",
+  "main": "./lib/index.js",
   "scripts": {
+    "build": "gulp",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/CaisanLi/zxj-micro.git"
   },
+  "files": ["lib", "src"],
   "author": "",
   "license": "ISC",
+  "publishConfig": {
+    "registry": "http://192.168.5.16:8081/repository/npm-hosted/"
+  },
   "bugs": {
     "url": "https://github.com/CaisanLi/zxj-micro/issues"
   },
   "homepage": "https://github.com/CaisanLi/zxj-micro#readme",
-  "dependencies": {
-    "@micro-zoe/micro-app": "^0.2.2"
-  },
+  "dependencies": {},
   "eslintConfig": {
     "root": true,
     "env": {
@@ -32,5 +35,11 @@
       "parser": "babel-eslint"
     },
     "rules": {}
+  },
+  "devDependencies": {
+    "@babel/core": "^7.15.0",
+    "@babel/preset-env": "^7.15.0",
+    "gulp": "^4.0.2",
+    "gulp-babel": "^8.0.0"
   }
 }
