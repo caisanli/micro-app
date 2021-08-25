@@ -3,7 +3,7 @@ import { fetchResource, getUrlHost, getUrl } from './utils';
 import Sandbox from './sandbox';
 
 function ZMicroApp() {
-    // console.log('this：', this)
+    
 }
 
 Object.assign(ZMicroApp.prototype, {
@@ -76,9 +76,11 @@ Object.assign(ZMicroApp.prototype, {
                 this.code.forEach(code => {
                     (0, eval)(this.sandbox.bindScope(code))
                 })
+            }).catch(err => {
+                console.log(err)
             })
-        }).catch(() => {
-            // console.log(err);
+        }).catch((err) => {
+            console.log(err);
         });
     },
 

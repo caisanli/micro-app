@@ -31,6 +31,6 @@ export function getUrl(url) {
     if(reg.test(url)) {
         return url;
     }
-    const { origin, port } = window.location;
-    return `${origin}${ port ? ':' + port : '' }${url}`;
+    const { origin } = window.location;
+    return `${origin}${url}`;
 }
