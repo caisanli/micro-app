@@ -31,6 +31,6 @@ export function getUrl(url) {
     if(reg.test(url)) {
         return url;
     }
-    const { origin } = window.location;
-    return `${origin}${url}`;
+    const { host, protocol } = window.location;
+    return `${protocol}//${host}/${url}`;
 }
