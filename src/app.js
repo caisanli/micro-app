@@ -11,13 +11,14 @@ Object.assign(ZMicroApp.prototype, {
     parseHtml(html) {
         const hrefReg = /href=["'][^"']+["']/g;
         const srcReg = /src=["'][^"']+["']/g;
-        const scriptReg = /<script[^>]*>([^<]*)<\/script>/g;
+        const scriptReg = /<script(?:\s+[^>]*)?>(.*?)<\/script\s*>/g;
         html = html.replace(hrefReg, val => {
             const reg = /href=["']([^"']+)["']/g;
             const result = reg.exec(val);
             const address = result[1];
             return val.replace(address, `${this.host}${address}`);
         }).replace(scriptReg, val => {
+            console.log('val：', val);
             this.parseScript(val);
             return '';
         }).replace(srcReg, val => {
@@ -31,7 +32,7 @@ Object.assign(ZMicroApp.prototype, {
     // 解析script标签
     parseScript(val) {
         const srcReg = /src=["']([^"']+)["']/g;
-        const scriptReg = /<script[^>]*>([^<]*)<\/script>/g;
+        const scriptReg = /<script(?:\s+[^>]*)?>(.*?)<\/script\s*>/g;
         const result = srcReg.exec(val);
         // 内联script
         if(!result) {
@@ -60,12 +61,14 @@ Object.assign(ZMicroApp.prototype, {
     },
     start(name, url) {
         this.init(name, url);
+        console.log('this.url：', this.url)
         fetchResource(this.url).then(html => {
             this.host = getUrlHost(this.url);
             this.html = this.parseHtml(html);
             this.insertHtml();
             const links = [];
             this.links.forEach(link => {
+                console.log('link：', link)
                 links.push(fetchResource(link));
             })
             // 
