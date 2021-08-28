@@ -2,7 +2,7 @@
 <template>
     <div>
         子应用
-        <micro-app name="child" url="http://127.0.0.1/child/" />
+        <micro-app name="child" url="/child/" />
     </div>
 </template>
 

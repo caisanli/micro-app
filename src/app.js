@@ -1,6 +1,6 @@
 
 import { fetchResource, getUrlHost, getUrl } from './utils';
-import Sandbox from './sandbox';
+import Sandbox from './sandbox/index.js';
 
 function ZMicroApp() {
     
@@ -58,9 +58,11 @@ Object.assign(ZMicroApp.prototype, {
         this.links = [];
         // 沙箱
         this.sandbox = new Sandbox(name);
+
     },
     start(name, url) {
         this.init(name, url);
+        this.sandbox.start();
         console.log('this.url：', this.url)
         fetchResource(this.url).then(html => {
             this.host = getUrlHost(this.url);
@@ -72,12 +74,13 @@ Object.assign(ZMicroApp.prototype, {
                 links.push(fetchResource(link));
             })
             // 
-            this.sandbox.start();
             Promise.all(links).then(scripts => {
                 this.code.push(...scripts);
             }).then(() => {
                 this.code.forEach(code => {
-                    (0, eval)(this.sandbox.bindScope(code))
+                    code = this.sandbox.bindScope(code);
+                    (new Function(code))();
+                    // (0, eval)(this.sandbox.bindScope(code))
                 })
             }).catch(err => {
                 console.log(err)

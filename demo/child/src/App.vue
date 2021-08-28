@@ -15,6 +15,11 @@ export default {
   name: 'App',
   components: {
       
+  },
+  mounted() {
+    document.body.addEventListener('click', function() {
+        console.log('click')
+    })
   }
 }
 </script>
