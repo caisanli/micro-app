@@ -3,6 +3,7 @@ class DiffSandbox {
   constructor() {
     this.modifyMap = {} // 存放修改的属性
     this.windowSnapshot = {} // windows的快照
+    this.proxyWindow = window;
   }
   start() {
     // 缓存active状态的沙箱

@@ -1,18 +1,18 @@
 import eventInstance from './event'
-const addEventListener = EventTarget.prototype.addEventListener;
-const removeEventListener = EventTarget.prototype.removeEventListener;
+const addEventListener = window.addEventListener;
+const removeEventListener = window.removeEventListener;
 class SideEffect {
-    constructor() {
-        this.evt = { }
+    constructor(proxyWindow) {
+        this.proxyWindow = proxyWindow;
+        this.evt = { on: () => {}, dispatch: () => {}, clear: () => {} }
         this.listeners = {};
     }
     start() {
-        EventTarget.prototype.addEventListener = (type, listener, options) => {
+        this.proxyWindow.addEventListener = (type, listener, options) => {
             const newListener = {
                 listener,
                 options
             }
-            console.log('时间类型：', type)
             if(this.listeners[type]) {
                 this.listeners[type].push(newListener)
             } else {
@@ -20,26 +20,26 @@ class SideEffect {
             }
             addEventListener(type, listener, options);
         }
-        EventTarget.prototype.removeEventListener = (type, listener, options) => {
+        this.proxyWindow.removeEventListener = (type, listener, options) => {
             const listeners = this.listeners[type];
             if(listeners && listener) {
                 this.listeners[type] = listeners.filter(item => listener !== item.listener);
             }
             removeEventListener(type, listener, options);
         }
-        this.evt.eventInstance = eventInstance;
+        this.evt = eventInstance;
     }
     clear() {
-        this.evt.eventInstance.clear();
-        this.evt = { }
+        this.evt.clear();
+        this.evt = { on: () => {}, dispatch: () => {}, clear: () => {} }
         Object.keys(this.listeners).forEach(key => {
             const listeners = this.listeners[key];
             listeners.forEach(item => {
                 removeEventListener(key, item.listener, item.options);
             })
         })
-        EventTarget.prototype.addEventListener = addEventListener;
-        EventTarget.prototype.removeEventListener = removeEventListener;
+        this.proxyWindow.addEventListener = addEventListener;
+        this.proxyWindow.removeEventListener = removeEventListener;
     }
 }
 

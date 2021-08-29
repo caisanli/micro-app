@@ -34,7 +34,9 @@
     "parserOptions": {
       "parser": "babel-eslint"
     },
-    "rules": {}
+    "rules": {
+        "no-console": "off"
+    }
   },
   "devDependencies": {
     "@babel/core": "^7.15.0",

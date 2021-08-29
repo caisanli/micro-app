@@ -18,7 +18,6 @@ Object.assign(ZMicroApp.prototype, {
             const address = result[1];
             return val.replace(address, `${this.host}${address}`);
         }).replace(scriptReg, val => {
-            console.log('val：', val);
             this.parseScript(val);
             return '';
         }).replace(srcReg, val => {
@@ -63,14 +62,12 @@ Object.assign(ZMicroApp.prototype, {
     start(name, url) {
         this.init(name, url);
         this.sandbox.start();
-        console.log('this.url：', this.url)
         fetchResource(this.url).then(html => {
             this.host = getUrlHost(this.url);
             this.html = this.parseHtml(html);
             this.insertHtml();
             const links = [];
             this.links.forEach(link => {
-                console.log('link：', link)
                 links.push(fetchResource(link));
             })
             // 

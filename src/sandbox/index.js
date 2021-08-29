@@ -4,18 +4,18 @@
 
 import DiffSandbox from './diff';
 import SideEffect from './sideEffect';
-import ProxSandbox from './proxySandbox';
+// import ProxSandbox from './proxySandbox';
 class Sandbox {
   constructor(name) {
     this.supportProxy = !!window.Proxy
-    if(!this.supportProxy) {
-        this.proxyWindow = new ProxSandbox()
-    } else {
+    // if(!this.supportProxy) {
+        // this.proxyWindow = new ProxSandbox()
+    // } else {
         this.proxyWindow = new DiffSandbox()
-    }
+    // }
     this.id = '_zxj_micro_' + name
     this.name = name
-    this.sideEffect = new SideEffect();
+    this.sideEffect = new SideEffect(this.proxyWindow.proxyWindow)
     this.active = false
   }
   // 修改js作用域
