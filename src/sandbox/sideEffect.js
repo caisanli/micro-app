@@ -1,11 +1,14 @@
 import eventInstance from './event'
 const addEventListener = window.addEventListener;
 const removeEventListener = window.removeEventListener;
+
+const defaultEvt = { on: () => {}, dispatch: () => {}, clear: () => {}, off: () => {} };
 class SideEffect {
     constructor(proxyWindow) {
         this.proxyWindow = proxyWindow;
-        this.evt = { on: () => {}, dispatch: () => {}, clear: () => {} }
+        this.evt = {...defaultEvt};
         this.listeners = {};
+        this.evtListenerTypes = {};
     }
     start() {
         this.proxyWindow.addEventListener = (type, listener, options) => {
@@ -27,11 +30,28 @@ class SideEffect {
             }
             removeEventListener(type, listener, options);
         }
-        this.evt = eventInstance;
+        this.evt = { 
+            on: (key, listener) => {
+                this.evtListenerTypes[key] = 1;
+                eventInstance.on(key, listener);
+            }, 
+            dispatch: (...args) => {
+                eventInstance.dispatch(...args);
+            }, 
+            off: (...args) => {
+                eventInstance.off(...args);
+            },
+            clear: () => {
+                Object.keys(this.evtListenerTypes).forEach(key => {
+                    eventInstance.off(key);
+                })
+                this.evtListenerTypes = {};
+            } 
+        };
     }
     clear() {
         this.evt.clear();
-        this.evt = { on: () => {}, dispatch: () => {}, clear: () => {} }
+        this.evt = {...defaultEvt};
         Object.keys(this.listeners).forEach(key => {
             const listeners = this.listeners[key];
             listeners.forEach(item => {
