@@ -23,8 +23,9 @@ export default {
         this.app = app;
         app.start(name, url);
     },
-    beforeDestroy: function beforeDestroy() {
+    beforeDestroy() {
         this.app.destroy();
+        this.app = null;
     },
     render(h) {
         var name = this.name;

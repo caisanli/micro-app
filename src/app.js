@@ -57,10 +57,10 @@ Object.assign(ZMicroApp.prototype, {
         this.links = [];
         // 沙箱
         this.sandbox = new Sandbox(name);
-
     },
     start(name, url) {
         this.init(name, url);
+        window['_zxj_is_micro'] = true;
         this.sandbox.start();
         fetchResource(this.url).then(html => {
             this.host = getUrlHost(this.url);
@@ -86,9 +86,17 @@ Object.assign(ZMicroApp.prototype, {
             console.log(err);
         });
     },
-
+    clear() {
+        this.el = null;
+        this.code = null;
+        this.links = null;
+        this.html = null;
+    },
     destroy() {
         this.sandbox.stop();
+        this.sandbox = null;
+        window['_zxj_is_micro'] = false;
+        this.clear();
     }
 })
 

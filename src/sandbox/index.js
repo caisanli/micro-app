@@ -7,15 +7,16 @@ import SideEffect from './sideEffect';
 // import ProxSandbox from './proxySandbox';
 class Sandbox {
   constructor(name) {
-    this.supportProxy = !!window.Proxy
-    // if(!this.supportProxy) {
-        // this.proxyWindow = new ProxSandbox()
+    // this.supportProxy = !!window.Proxy
+    // if(this.supportProxy) {
+    //     this.proxyWindow = new ProxSandbox()
     // } else {
-        this.proxyWindow = new DiffSandbox()
+    //     this.proxyWindow = new DiffSandbox()
     // }
+    this.proxyWindow = new DiffSandbox();
     this.id = '_zxj_micro_' + name
     this.name = name
-    this.sideEffect = new SideEffect(this.proxyWindow.proxyWindow)
+    this.sideEffect = new SideEffect(window)
     this.active = false
   }
   // 修改js作用域
@@ -30,7 +31,6 @@ class Sandbox {
     this.active = true
     window[this.id] = this.sideEffect
     this.proxyWindow.start()
-    window.atest = 'caisan';
     this.sideEffect.start();
   }
   // 关闭沙箱
