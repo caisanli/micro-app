@@ -1,14 +1,14 @@
-// import axios from 'axios';
+import axios from 'axios';
 
 /**
  * 拉取资源
  * @param url 
  */
 export function fetchResource (url) {
-    // return axios.get(url).then(res => {
-    //     return res.data;
-    // });
-    return fetch(url).then(res => res.text());
+    return axios.get(url).then(res => {
+        return res.data;
+    });
+    // return fetch(url).then(res => res.text());
 }
 
 /**
