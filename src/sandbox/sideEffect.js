@@ -55,7 +55,7 @@ class SideEffect {
         Object.keys(this.listeners).forEach(key => {
             const listeners = this.listeners[key];
             listeners.forEach(item => {
-                removeEventListener(key, item.listener, item.options);
+                removeEventListener.call(null, key, item.listener, item.options);
             })
         })
         this.proxyWindow.addEventListener = addEventListener;
