@@ -1,4 +1,5 @@
 import { MicroApp } from './app';
+import cache from './utils/cache';
 export default {
     name: 'MicroApp',
     data: function data() {
@@ -19,13 +20,19 @@ export default {
     },
     mounted() {
         const { name, url } = this;
-        const app = new MicroApp();
-        this.app = app;
-        app.start(name, url);
+        if(!name || !url) return ;
+        let app = cache[name];
+        if(app) {
+            this.app = app;
+            this.app.mount();
+        } else {
+            this.app = new MicroApp();
+            cache[name] = this.app;
+            this.app.init(name, url);
+        }
     },
     beforeDestroy() {
         this.app.destroy();
-        this.app = null;
     },
     render(h) {
         var name = this.name;
