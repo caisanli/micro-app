@@ -1,5 +1,10 @@
 module.exports = {
     publicPath: '/child',
+    configureWebpack: {
+        output: {
+            jsonpFunction: 'childJsonpFunction'
+        },
+    },
     devServer: {
         headers: {
             "Access-Control-Allow-Origin": "*"
