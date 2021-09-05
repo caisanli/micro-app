@@ -1,14 +1,30 @@
-import axios from 'axios';
 
 /**
  * 拉取资源
  * @param url 
  */
 export function fetchResource (url) {
-    return axios.get(url).then(res => {
-        return res.data;
-    });
-    // return fetch(url).then(res => res.text());
+    return ajax({url}).then(res => res)
+}
+
+export function ajax(opt = {}) {
+    return new Promise((resolve, reject) => {
+        let { url, method, data, headers } = opt;
+        url = url || '';
+        method = method || 'get';
+        data = data || {};
+        headers = headers || {};
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function(data) {
+            resolve(data.target.response)
+        };
+        xhr.onerror = reject;
+        xhr.open(method, url);
+        Object.keys(headers).forEach(key => {
+            xhr.setRequestHeader(key, headers[key])
+        })
+        xhr.send(data);
+    })
 }
 
 /**
