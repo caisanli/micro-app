@@ -21,9 +21,7 @@ class Sandbox {
   }
   // 修改js作用域
   bindScope(code) {
-    return 'with (window) {' + code + '}';
-    // return new Function(code);
-    // return `;(function(window, self){with(window){;${code}\n}}).call(window, window, window);`
+    return `;(function(window, self){with(window){;${code}\n}}).call(window, window, window);`
   }
   // 开启沙箱
   start() {
