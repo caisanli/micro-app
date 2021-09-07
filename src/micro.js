@@ -39,7 +39,8 @@ export default {
         return h('div', {
             // attribute
             attrs: {
-                id: `zxj_micro-${name}`
+                id: `zxj_micro-${name}`,
+                name: `zxj_micro_${name}`
             }
         })
     }
