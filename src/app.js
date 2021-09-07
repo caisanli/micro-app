@@ -1,6 +1,6 @@
 
 import { fetchResource, getUrlHost, getUrl } from './utils';
-// import { parseHtml } from './utils/html';
+import { parseHtml, scopedCssStyle } from './utils/html';
 import Sandbox from './sandbox/index.js';
 
 function ZMicroApp() {
@@ -10,7 +10,7 @@ function ZMicroApp() {
 Object.assign(ZMicroApp.prototype, {
     // 解析HTML
     parseHtml(html) {
-        // parseHtml(html);
+        // parseHtml(html, this);
         const hrefReg = /href=["'][^"']+["']/g;
         const srcReg = /src=["'][^"']+["']/g;
         const scriptReg = /<script(?:\s+[^>]*)?>(.*?)<\/script\s*>/g;
@@ -54,17 +54,40 @@ Object.assign(ZMicroApp.prototype, {
         this.name = name;
         this.url = getUrl(url);
         this.html = '';
-        this.host = '';
+        this.host = getUrlHost(this.url);
         this.el = null;
         this.code = [];
         this.links = [];
+        this.observer = null;
         // 沙箱
         this.sandbox = new Sandbox(name);
         this.parseSource(this.mount)
+        
+    },
+    observerHead() {
+        const head = document.querySelector('head');
+        const config = { attributes: false, childList: true, subtree: false };
+        const callback = (mutationsList) => {
+            // Use traditional 'for loops' for IE 11
+            [...mutationsList].forEach(mutation => {
+                if (mutation.type !== 'childList') {
+                    return ;
+                }
+                if(!mutation.addedNodes || !mutation.addedNodes.length) {
+                    return ;
+                }
+                [...mutation.addedNodes].forEach(node => {
+                    if(node.nodeName !== 'STYLE') return ;
+                    scopedCssStyle(node, this.name)
+                })
+            })
+        };
+        const observer = new MutationObserver(callback);
+        observer.observe(head, config);
+        this.observer = observer;
     },
     parseSource(callback) {
         fetchResource(this.url).then(html => {
-            this.host = getUrlHost(this.url);
             this.html = this.parseHtml(html);
             const links = [];
             this.links.forEach(link => {
@@ -82,6 +105,8 @@ Object.assign(ZMicroApp.prototype, {
     },
     mount() {
         window['_zxj_is_micro'] = true;
+        // 监听head
+        this.observerHead();
         this.insertHtml();
         this.sandbox.start();
         this.code.forEach(code => {
@@ -92,6 +117,7 @@ Object.assign(ZMicroApp.prototype, {
     },
     destroy() {
         this.sandbox.stop();
+        this.observer && this.observer.disconnect();
         window['_zxj_is_micro'] = false;
     }
 })
