@@ -8,62 +8,16 @@ function ZMicroApp() {
 }
 
 Object.assign(ZMicroApp.prototype, {
-    // 解析HTML
-    parseHtml(html) {
-        // parseHtml(html, this);
-        const hrefReg = /href=["'][^"']+["']/g;
-        const srcReg = /src=["'][^"']+["']/g;
-        const scriptReg = /<script(?:\s+[^>]*)?>(.*?)<\/script\s*>/g;
-        html = html.replace(hrefReg, val => {
-            const reg = /href=["']([^"']+)["']/g;
-            const result = reg.exec(val);
-            const address = result[1];
-            return val.replace(address, `${this.host}${address}`);
-        }).replace(scriptReg, val => {
-            this.parseScript(val);
-            return '';
-        }).replace(srcReg, val => {
-            const reg = /src=["']([^"']+)["']/g;
-            const result = reg.exec(val);
-            const address = result[1];
-            return val.replace(address, `${this.host}${address}`);
-        })
-        return html;
-    },
-    // 解析script标签
-    parseScript(val) {
-        const srcReg = /src=["']([^"']+)["']/g;
-        const scriptReg = /<script(?:\s+[^>]*)?>(.*?)<\/script\s*>/g;
-        const result = srcReg.exec(val);
-        // 内联script
-        if(!result) {
-            this.code.push(
-                scriptReg.exec(val)[1]
-            )
-            return ;
-        }
-        const url = `${this.host}${result[1]}`;
-        this.links.push(url);
-    },
     insertHtml() {
         this.el = document.getElementById(`zxj_micro-${this.name}`);
-        // const fr = document.createDocumentFragment();
-        this.el.innerHTML = this.html;
+        const fragment = document.createDocumentFragment();
+        const cloneContainer = this.container.cloneNode(true);
+        cloneContainer.childNodes.forEach(node => {
+            fragment.appendChild(node)
+        })
+        this.el.appendChild(fragment);
     },
-    init(name, url) {
-        this.name = name;
-        this.url = getUrl(url);
-        this.html = '';
-        this.host = getUrlHost(this.url);
-        this.el = null;
-        this.code = [];
-        this.links = [];
-        this.observer = null;
-        // 沙箱
-        this.sandbox = new Sandbox(name);
-        this.parseSource(this.mount)
-        
-    },
+    
     observerHead() {
         const head = document.querySelector('head');
         const config = { attributes: false, childList: true, subtree: false };
@@ -86,22 +40,36 @@ Object.assign(ZMicroApp.prototype, {
         observer.observe(head, config);
         this.observer = observer;
     },
-    parseSource(callback) {
+
+    // 解析入口文件
+    parseEntry() {
         fetchResource(this.url).then(html => {
-            this.html = this.parseHtml(html);
-            const links = [];
-            this.links.forEach(link => {
-                links.push(fetchResource(link));
-            })
-            // 
-            Promise.all(links).then(scripts => {
-                this.code.push(...scripts);
-            }).then(callback.bind(this)).catch(err => {
-                console.log(err)
-            })
+            this.container = parseHtml(html, this);
+            this.insertHtml();
         }).catch((err) => {
             console.log(err);
         });
+    },
+    execCode() {
+        if(++this.fetchCount >= 2) {
+            this.mount();
+        }
+    },
+    init(name, url) {
+        this.name = name;
+        this.url = getUrl(url);
+        this.container = null;
+        this.host = getUrlHost(this.url);
+        this.el = null;
+        this.fetchCount = 0;
+        this.scriptCodes = [];
+        this.styleCodes = [];
+        this.links = [];
+        this.scripts = [];
+        this.observer = null;
+        // 沙箱
+        this.sandbox = new Sandbox(name);
+        this.parseEntry(this.mount)
     },
     mount() {
         window['_zxj_is_micro'] = true;
@@ -109,10 +77,32 @@ Object.assign(ZMicroApp.prototype, {
         this.observerHead();
         this.insertHtml();
         this.sandbox.start();
-        this.code.forEach(code => {
-            code = this.sandbox.bindScope(code);
-            Function(code)();
-            // (0, eval)(this.sandbox.bindScope(code))
+        this.execStyle();
+        this.execScript();
+    },
+    execStyle() {
+        (new Promise((resolve) => {
+            const firstChild = this.el.firstChild;
+            this.styleCodes.forEach(code => {
+                const style = document.createElement('style');
+                style.textContent = code;
+                this.el.insertBefore(style, firstChild);
+            })
+            resolve();
+        })).catch(err => {
+            console.log(err)
+        })
+    },
+    execScript() {
+        (new Promise((resolve) => {
+            this.scriptCodes.forEach(code => {
+                code = this.sandbox.bindScope(code);
+                Function(code)();
+                // (0, eval)(this.sandbox.bindScope(code))
+            })
+            resolve();
+        })).catch(err => {
+            console.log(err)
         })
     },
     destroy() {
