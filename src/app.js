@@ -170,9 +170,13 @@ class ZMicroApp {
         this.sandbox.start();
         Promise.resolve();
         setTimeout(() => {
-            Promise.resolve(this.execStyle.bind(this))
-            this.execScript();
-            this.sandbox.sideEffect.evt.dispatch('mount');
+            try {
+                this.execStyle();
+                this.execScript();
+                this.sandbox.sideEffect.evt.dispatch('mount');
+            } catch (error) {
+                console.log(error)
+            }
         }, 0);
     }
     /**
