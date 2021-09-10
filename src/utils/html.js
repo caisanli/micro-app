@@ -13,9 +13,12 @@ import { getUrlHost, fetchResource } from './index';
 export function parseHtml(html, app) {
     const parent = document.createElement('div');
     parent.innerHTML = html;
-    recursionGetSource(parent, app);
-    getStyle(app);
-    getScript(app);
+    setTimeout(() => {
+        recursionGetSource(parent, app);
+        getStyle(app);
+        getScript(app);
+    }, 0)
+    
     return parent;
 }
 
