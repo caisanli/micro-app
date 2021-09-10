@@ -14,28 +14,29 @@ class Sandbox {
     //     this.proxyWindow = new DiffSandbox()
     // }
     this.proxyWindow = new DiffSandbox();
-    this.id = '_zxj_micro_' + name
-    this.name = name
-    this.sideEffect = new SideEffect(window)
-    this.active = false
+    this.id = '_zxj_micro_' + name;
+    this.name = name;
+    this.sideEffect = new SideEffect(window);
+    this.active = false;
   }
   // 修改js作用域
   bindScope(code) {
-    return `;(function(window, self){with(window){;${code}\n}}).call(window, window, window);`
+    return `;(function(window, self){with(window){;${code}\n}}).call(window, window, window);`;
   }
   // 开启沙箱
   start() {
-    if (this.active) return
-    this.active = true
-    window[this.id] = this.sideEffect
-    this.proxyWindow.start()
+    if (this.active) return;
+    this.active = true;
+    // 每个子系统独有副作用处理
+    window[this.id] = this.sideEffect;
+    this.proxyWindow.start();
     this.sideEffect.start();
   }
   // 关闭沙箱
   stop() {
-    if (!this.active) return
+    if (!this.active) return;
     delete window[this.id];
-    this.active = false
+    this.active = false;
     this.proxyWindow.stop();
     this.sideEffect.clear();
   }

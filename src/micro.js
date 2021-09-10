@@ -1,3 +1,6 @@
+/**
+ * 创建Vue MicroApp组件
+ */
 import { MicroApp } from './app';
 import cache from './utils/cache';
 export default {
@@ -13,7 +16,7 @@ export default {
             type: String,
             default: ''
         },
-        url: { // index.html地址
+        url: { // 子系统入口地址
             type: String,
             default: ''
         }
@@ -21,24 +24,25 @@ export default {
     mounted() {
         const { name, url } = this;
         if(!name || !url) return ;
+        // 从缓存中取子系统实例
         let app = cache[name];
-        if(app) {
+        if(app) { // 存在实例，就挂载
             this.app = app;
             this.app.mount();
-        } else {
+        } else { // 不存在实例，就初始化
             this.app = new MicroApp();
             cache[name] = this.app;
             this.app.init(name, url);
         }
     },
     beforeDestroy() {
-        this.app.destroy();
+        // 取消挂载
+        this.app.unmount();
     },
     render(h) {
         var name = this.name;
         return h('div', {
-            // attribute
-            attrs: {
+            attrs: {  // 生成唯一属性
                 id: `zxj_micro-${name}`,
                 name: `zxj_micro_${name}`
             }

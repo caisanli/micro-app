@@ -1,4 +1,6 @@
-
+/**
+ * 工具类方法
+ */
 /**
  * 拉取资源
  * @param url 
@@ -7,6 +9,11 @@ export function fetchResource (url) {
     return ajax({url}).then(res => res)
 }
 
+/**
+ * ajax
+ * @param {*} opt 
+ * @returns 
+ */
 export function ajax(opt = {}) {
     return new Promise((resolve, reject) => {
         let { url, method, data, headers } = opt;

@@ -1,4 +1,6 @@
-
+/**
+ * 基于Diff沙箱
+ */
 class DiffSandbox {
   constructor() {
     this.modifyMap = {} // 存放修改的属性
