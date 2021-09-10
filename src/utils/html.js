@@ -13,12 +13,11 @@ import { getUrlHost, fetchResource } from './index';
 export function parseHtml(html, app) {
     const parent = document.createElement('div');
     parent.innerHTML = html;
+    recursionGetSource(parent, app);
     setTimeout(() => {
-        recursionGetSource(parent, app);
         getStyle(app);
         getScript(app);
     }, 0)
-    
     return parent;
 }
 
@@ -31,7 +30,7 @@ function getStyle(app) {
     const list = [];
     links.forEach(item => {
         if(item.href) {
-            list.push(fetchResource(item.href))
+            list.push(setRemoteCssScoped(item.href, app));
         } else {
             list.push(item.code)
         }
@@ -51,7 +50,7 @@ function getScript(app) {
     const list = [];
     scripts.forEach(item => {
         if(item.href) {
-            list.push(fetchResource(item.href))
+            list.push(fetchResource(item.href));
         } else {
             list.push(item.code)
         }
@@ -60,6 +59,28 @@ function getScript(app) {
         app.scriptCodes = codes;
         app.execCode();
     })
+}
+
+/**
+ * 设置远程css作用域
+ * @param {*} href 
+ * @param {*} app 
+ * @returns 
+ */
+function setRemoteCssScoped(href, app) {
+    return fetchResource(href).then(css => {
+        return setLocalCssScoped(css, app);
+    })
+}
+
+function setLocalCssScoped(css, app) {
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.body.appendChild(style);
+    style.sheet.disabled = true;
+    scopedCssStyle(style, app.name);
+    document.body.removeChild(style);
+    return style.textContent;
 }
 
 /**
@@ -73,6 +94,9 @@ function recursionGetSource(element, app) {
         switch(nodeName) {
             case 'META':
             case 'TITLE':
+                break;
+            case 'STYLE':
+                parseStyle(element, child, app);
                 break;
             case 'LINK':
                 parseLink(element, child, app);
@@ -120,24 +144,29 @@ function parseScript(parentNode, node, app) {
 function parseLink(parentNode, node, app) {
     const rel = node.getAttribute('rel');
     const href = node.getAttribute('href');
-    const type = node.getAttribute('type');
+    // const type = node.getAttribute('type');
     const newHref = getAbsoluteHref(href, app.host); // getUrlHost(href) ? href : `${app.host}${href.startsWith('/') ? href: '/' + href}`;
+    
     if(href && rel === 'stylesheet') { // 外部链接
         app.links.push({
             href: newHref,
             code: ''
         });
         parentNode.removeChild(node);
-    } else if(!rel || type === 'text/css') { // 内部样式表
-        app.links.push({
-            href: '',
-            code: scopedCssStyle(node, app.name)
-        })
     } else { // 其他
         node.setAttribute('href', newHref);
     }
 }
 
+/**
+ * 解析style标签的内容
+ * @param {*} parentNode 父元素
+ * @param {*} node 当前style节点
+ * @param {*} app 应用实例
+ */
+function parseStyle(parentNode, node, app) {
+    node.textContent = setLocalCssScoped(node.textContent, app);
+}
 
 /**
  * 设置样式作用域
@@ -148,7 +177,7 @@ export function scopedCssStyle(node, name) {
     const cssRules = node.sheet.cssRules;
     const styleList = [];
     parseCssRules(cssRules, styleList, name);
-    node.innerText = styleList.join(' ');
+    node.textContent = styleList.join(' ');
 }
 
 /**
@@ -159,12 +188,21 @@ export function scopedCssStyle(node, name) {
  */
 function parseCssRules(cssRules, styleList, name) {
     [...cssRules].forEach(rule => {
+        const type = rule.type;
         if(rule.media) { // 媒体查询
             const mediaStyleText = [];
             const conditionText = rule.media.mediaText;
             parseCssRules(rule.cssRules, mediaStyleText, name);
             const newStyleText = `@media ${conditionText} { ${ mediaStyleText.join(' ') } }`;
             styleList.push(newStyleText);
+        } else if(type === 7 || type === 8) {
+            // 为定义动画的时候进入该判断
+            // 这里使用try catch为了兼容IE
+            try {
+                styleList.push(rule.cssText)
+            } catch (error) {
+                console.log(error);
+            }
         } else { // 普通选择器
             const selectorText = rule.selectorText || '';
             let cssText = rule.cssText || '';
