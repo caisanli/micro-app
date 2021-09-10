@@ -100,31 +100,37 @@ class ZMicroApp {
      * 执行css代码
      */
     execStyle() {
-        (new Promise((resolve) => {
-            const firstChild = this.el.firstChild;
-            this.styleCodes.forEach(code => {
-                const style = document.createElement('style');
-                style.textContent = code;
-                this.el.insertBefore(style, firstChild);
-            })
-            resolve();
-        })).catch(err => {
-            console.log(err)
+        new Promise((resolve, reject) => {
+            try {
+                const firstChild = this.el.firstChild;
+                this.styleCodes.forEach(code => {
+                    const style = document.createElement('style');
+                    style.textContent = code;
+                    this.el.insertBefore(style, firstChild);
+                })
+                resolve();
+            } catch (error) {
+                console.log(error)
+                reject();
+            }
         })
     }
     /**
      * 执行JavaScript代码
      */
     execScript() {
-        (new Promise((resolve) => {
-            this.scriptCodes.forEach(code => {
-                code = this.sandbox.bindScope(code);
-                Function(code)();
-                // (0, eval)(this.sandbox.bindScope(code))
-            })
-            resolve();
-        })).catch(err => {
-            console.log(err)
+        return new Promise((resolve, reject) => {
+            try {
+                this.scriptCodes.forEach(code => {
+                    code = this.sandbox.bindScope(code);
+                    Function(code)();
+                    // (0, eval)(this.sandbox.bindScope(code))
+                })
+                resolve();
+            } catch (error) {
+                console.log(error);
+                reject(error)
+            }
         })
     }
     /**
@@ -137,12 +143,15 @@ class ZMicroApp {
         this.insertHtml();
         this.sandbox.start();
         this.execStyle();
-        this.execScript();
+        this.execScript().then(() => {
+            this.sandbox.sideEffect.evt.dispatch('mount');
+        });
     }
     /**
      * 取消挂载
      */
     unmount() {
+        this.sandbox.sideEffect.evt.dispatch('unmount');
         this.sandbox.stop();
         this.observer && this.observer.disconnect();
         window['_zxj_is_micro'] = false;
