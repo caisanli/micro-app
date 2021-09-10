@@ -11,7 +11,7 @@ class ZMicroApp {
         this.el = document.getElementById(`zxj_micro-${this.name}`);
         const fragment = document.createDocumentFragment();
         const cloneContainer = this.container.cloneNode(true);
-        cloneContainer.childNodes.forEach(node => {
+        [...cloneContainer.childNodes].forEach(node => {
             fragment.appendChild(node)
         })
         this.el.appendChild(fragment);
@@ -19,6 +19,7 @@ class ZMicroApp {
     /**
      * 监听head元素，
      * 如果有新的style元素添加就设置css作用域
+     * 也处理动态script
      * 目前使用MutationObserver，未兼容IE10
      */
     observerHead() {
@@ -34,8 +35,22 @@ class ZMicroApp {
                     return ;
                 }
                 [...mutation.addedNodes].forEach(node => {
-                    if(node.nodeName !== 'STYLE') return ;
-                    scopedCssStyle(node, this.name)
+                    const nodeName = node.nodeName;
+                    if(nodeName !== 'STYLE' && nodeName !== 'SCRIPT') {
+                        return ;
+                    }
+                    const id = Math.round((Math.random() * 1000)) + '-' + Date.now();
+                    node.id = id;
+                    switch(nodeName) {
+                        case 'STYLE':
+                            this.headAddStyleIds.push(id);
+                            scopedCssStyle(node, this.name);
+                            break;
+                        case 'SCRIPT':
+                            this.headAddStyleIds.push(id);
+                            break;
+                    }
+                    
                 })
             })
         };
@@ -73,11 +88,14 @@ class ZMicroApp {
      * @param {*} url 入口文件
      */
     init(name, url) {
+        this.status = 'init';
         this.name = name;
         this.url = getUrl(url);
         this.container = null;
         this.host = getUrlHost(this.url);
         this.el = null;
+        // 记录在head标签中动态添加的style、script
+        this.headAddStyleIds = [];
         // 用于css、javascript资源请求计数
         this.fetchCount = 0;
         // 存放JavaScript代码
@@ -94,63 +112,78 @@ class ZMicroApp {
         this.sandbox = new Sandbox(name);
         // 处理入口文件
         this.parseEntry(this.mount);
-
     }
     /**
      * 执行css代码
      */
     execStyle() {
-        new Promise((resolve, reject) => {
-            try {
-                const firstChild = this.el.firstChild;
-                this.styleCodes.forEach(code => {
-                    const style = document.createElement('style');
-                    style.textContent = code;
-                    this.el.insertBefore(style, firstChild);
-                })
-                resolve();
-            } catch (error) {
-                console.log(error)
-                reject();
-            }
-        })
+        try {
+            const firstChild = this.el.firstChild;
+            this.styleCodes.forEach(code => {
+                const style = document.createElement('style');
+                style.textContent = code;
+                this.el.insertBefore(style, firstChild);
+            })
+        } catch (error) {
+            console.log(error)
+        }
     }
     /**
      * 执行JavaScript代码
      */
     execScript() {
-        return new Promise((resolve, reject) => {
-            try {
-                this.scriptCodes.forEach(code => {
-                    code = this.sandbox.bindScope(code);
-                    Function(code)();
-                    // (0, eval)(this.sandbox.bindScope(code))
-                })
-                resolve();
-            } catch (error) {
-                console.log(error);
-                reject(error)
-            }
+        try {
+            this.scriptCodes.forEach(code => {
+                code = this.sandbox.bindScope(code);
+                Function(code)();
+                // (0, eval)(this.sandbox.bindScope(code))
+            })
+        } catch (error) {
+            console.log(error);
+        }
+    }
+    /**
+     * 清空head标签动态添加的style、script标签
+     */
+    clearHeadStyle() {
+        const head = document.querySelector('head');
+        this.headAddStyleIds.forEach(id => {
+           head.removeChild(document.getElementById(id))
         })
+        this.headAddStyleIds = [];
     }
     /**
      * 挂载
      */
     mount() {
+        if(this.status === 'mount') {
+            return ;
+        }
+        const prevStatusIsInit = this.status === 'init';
+        this.status = 'mount';
         window['_zxj_is_micro'] = true;
         // 监听head
         this.observerHead();
-        this.insertHtml();
+        if(!prevStatusIsInit) {
+            this.insertHtml();
+        }
         this.sandbox.start();
-        this.execStyle();
-        this.execScript().then(() => {
+        Promise.resolve();
+        setTimeout(() => {
+            Promise.resolve(this.execStyle.bind(this))
+            this.execScript();
             this.sandbox.sideEffect.evt.dispatch('mount');
-        });
+        }, 0);
     }
     /**
      * 取消挂载
      */
     unmount() {
+        if(this.status === 'unmount') {
+            return ;
+        }
+        this.status = 'unmount';
+        this.clearHeadStyle();
         this.sandbox.sideEffect.evt.dispatch('unmount');
         this.sandbox.stop();
         this.observer && this.observer.disconnect();
