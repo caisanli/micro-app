@@ -8,7 +8,7 @@ class DiffSandbox {
     // this.proxyWindow = window;
   }
   start() {
-    // 缓存active状态的沙箱
+    // 缓存window对象上的属性
     this.windowSnapshot = {}
     for (const item in window) {
       this.windowSnapshot[item] = window[item]
@@ -24,6 +24,7 @@ class DiffSandbox {
         // 记录变更
         // this.modifyMap[item] = window[item]
         // 还原window
+        if(item === '0') continue;
         window[item] = this.windowSnapshot[item]
       }
     }
