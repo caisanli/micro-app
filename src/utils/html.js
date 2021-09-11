@@ -22,6 +22,34 @@ export function parseHtml(html, app) {
 }
 
 /**
+ * 获取预加载资源
+ * @param {*} app 
+ */
+export function getPrefetchSource(app) {
+    const source = app.prefetchSource;
+    const jsList = [], cssList = [];
+    source.forEach(item => {
+        const { type, href } = item;
+        switch(type) {
+            case 'css':
+                cssList.push(setRemoteCssScoped(href, app));
+                break;
+            case 'js':
+                jsList.push(fetchResource(href));
+                break;
+        }
+    })
+    Promise.all(jsList).then(scripts => {
+        app.prefetchScripts = scripts;
+        app.loadPrefetchCode();
+    });
+    Promise.all(cssList).then(styles => {
+        app.prefetchStyles = styles;
+        app.loadPrefetchCode();
+    });
+}
+
+/**
  * 获取远程css样式
  * @param {*} app 应用实例
  */
@@ -37,7 +65,7 @@ function getStyle(app) {
     })
     Promise.all(list).then(codes => {
         app.styleCodes = codes;
-        app.execCode();
+        app.loadCode();
     })
 }
 
@@ -57,7 +85,7 @@ function getScript(app) {
     })
     Promise.all(list).then(codes => {
         app.scriptCodes = codes;
-        app.execCode();
+        app.loadCode();
     })
 }
 
@@ -144,6 +172,7 @@ function parseScript(parentNode, node, app) {
 function parseLink(parentNode, node, app) {
     const rel = node.getAttribute('rel');
     const href = node.getAttribute('href');
+    const as = node.getAttribute('as');
     // const type = node.getAttribute('type');
     const newHref = getAbsoluteHref(href, app.host); // getUrlHost(href) ? href : `${app.host}${href.startsWith('/') ? href: '/' + href}`;
     
@@ -152,7 +181,23 @@ function parseLink(parentNode, node, app) {
             href: newHref,
             code: ''
         });
+        const comment = document.createComment(`<link href="${newHref}" rel="stylesheet" />`);
+        parentNode.insertBefore(comment, node);
         parentNode.removeChild(node);
+    } else if (!as && rel === 'prefetch') { // 处理空闲时间加载的资源
+        const comment = document.createComment(`<link href="${newHref}" rel="prefetch" />`);
+        const result = /\.(js|css)$/.exec(newHref);
+        if(!result) {
+            node.setAttribute('href', newHref);
+        } else {
+            const type = result[1];
+            app.prefetchSource.push({
+                type,
+                href: newHref
+            })
+            parentNode.insertBefore(comment, node);
+            parentNode.removeChild(node);
+        }
     } else { // 其他
         node.setAttribute('href', newHref);
     }

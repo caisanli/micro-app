@@ -1,6 +1,6 @@
 
-import { fetchResource, getUrlHost, getUrl } from './utils';
-import { parseHtml, scopedCssStyle } from './utils/html';
+import { fetchResource, getUrlHost, getUrl, requestHostCallback } from './utils';
+import { parseHtml, scopedCssStyle, getPrefetchSource } from './utils/html';
 import Sandbox from './sandbox/index.js';
 
 class ZMicroApp {
@@ -77,10 +77,30 @@ class ZMicroApp {
      * 由于请求资源是异步的
      * 所以计了数，2次后表示css、javascript资源都请求完毕，可以执行了
      */
-    execCode() {
+    loadCode() {
         if(++this.fetchCount >= 2) {
             this.mount();
+            requestHostCallback(getPrefetchSource.bind(null, this));
         }
+    }
+    /**
+     * 用于预加载css、javascript资源请求完毕后执行
+     * 由于请求资源是异步的
+     * 所以计了数，2次后表示css、javascript资源都请求完毕，可以执行了
+     */
+    loadPrefetchCode() {
+        if(++this.prefetchCount >= 2) {
+            console.log('执行')
+            this.execPrefetchCode();
+        }
+    }
+    /**
+     * 执行预加载资源的代码
+     */
+    execPrefetchCode() {
+        console.log('执行预加载代码...')
+        this.execStyle(this.prefetchStyles);
+        this.execScript(this.prefetchScripts);
     }
     /**
      * 初始化
@@ -108,6 +128,14 @@ class ZMicroApp {
         this.scripts = [];
         // MutationObserver实例
         this.observer = null;
+        // 预加载资源类型请求次数
+        this.prefetchCount = 0;
+        // 预加载script代码
+        this.prefetchScripts = [];
+        // 预加载css样式代码
+        this.prefetchStyles = [];
+        // 预加载资源
+        this.prefetchSource = [];
         // 沙箱
         this.sandbox = new Sandbox(name);
         // 处理入口文件
@@ -116,13 +144,13 @@ class ZMicroApp {
     /**
      * 执行css代码
      */
-    execStyle() {
+    execStyle(styleCodes) {
         try {
-            const firstChild = this.el.firstChild;
-            this.styleCodes.forEach(code => {
+            // const firstChild = this.el.firstChild;
+            styleCodes.forEach(code => {
                 const style = document.createElement('style');
                 style.textContent = code;
-                this.el.insertBefore(style, firstChild);
+                this.el.appendChild(style);
             })
         } catch (error) {
             console.log(error)
@@ -131,9 +159,9 @@ class ZMicroApp {
     /**
      * 执行JavaScript代码
      */
-    execScript() {
+    execScript(scriptCodes) {
         try {
-            this.scriptCodes.forEach(code => {
+            scriptCodes.forEach(code => {
                 code = this.sandbox.bindScope(code);
                 Function(code)();
                 // (0, eval)(this.sandbox.bindScope(code))
@@ -169,11 +197,16 @@ class ZMicroApp {
         }
         this.sandbox.start();
         Promise.resolve();
+        console.log('mount...')
         setTimeout(() => {
             try {
-                this.execStyle();
-                this.execScript();
+                console.log('执行代码...')
+                this.execStyle(this.styleCodes);
+                this.execScript(this.scriptCodes);
                 this.sandbox.sideEffect.evt.dispatch('mount');
+                if(!prevStatusIsInit) {
+                    this.execPrefetchCode();
+                }
             } catch (error) {
                 console.log(error)
             }
