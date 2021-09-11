@@ -232,15 +232,33 @@ export function scopedCssStyle(node, name) {
  * @param {*} name 
  */
 function parseCssRules(cssRules, styleList, name) {
-    [...cssRules].forEach(rule => {
+    Array.from(cssRules).forEach(rule => {
         const type = rule.type;
-        if(rule.media) { // 媒体查询
+        if(type === 4) { // @media 媒体查询
             const mediaStyleText = [];
             const conditionText = rule.media.mediaText;
             parseCssRules(rule.cssRules, mediaStyleText, name);
             const newStyleText = `@media ${conditionText} { ${ mediaStyleText.join(' ') } }`;
             styleList.push(newStyleText);
-        } else if(type === 7 || type === 8) {
+        } else if(type === 5) { // @font-face
+            // 这里使用try catch为了兼容IE
+            try {
+                // 处理src相对路径
+                let cssText = rule.cssText || '';
+                if(rule.style && rule.style.src) {
+                    let src = rule.style.src;
+                    if(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/.test(src)) {
+                        let newSrc = src.replace(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/g, (str, url, prefix) => {
+                            return `url("${url.replace(prefix, `/${name}/`)}")`;
+                        });
+                        cssText = cssText.replace(src, newSrc);
+                    }
+                }
+                styleList.push(cssText)
+            } catch (error) {
+                console.log(error);
+            }
+        } else if(type === 7 || type === 8) { // @keyframe
             // 为定义动画的时候进入该判断
             // 这里使用try catch为了兼容IE
             try {
@@ -251,10 +269,22 @@ function parseCssRules(cssRules, styleList, name) {
         } else { // 普通选择器
             const selectorText = rule.selectorText || '';
             let cssText = rule.cssText || '';
+            
+            // 处理background相对路径
+            if(rule.style && rule.style.backgroundImage) {
+                let backgroundImage = rule.style.backgroundImage;
+                if(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/.test(backgroundImage)) {
+                    let newBackgroundImage = backgroundImage.replace(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/, (str, url, prefix) => {
+                        return `url("${url.replace(prefix, `/${name}/`)}")`;
+                    });
+                    cssText = cssText.replace(backgroundImage, newBackgroundImage);
+                }
+            }
+
             selectorText.split(',').forEach(select => {
                 select = select.trim();
                 // body、html选择器不设置作用域
-                if(!select.startsWith('body') && !select.startsWith('html')) {
+                if(!select.startsWith('body') && !select.startsWith('html') && !select.startsWith('@font-face')) {
                     cssText = cssText.replace(select, `[name="zxj_micro_${name}"] ${select}`)
                 }
             });
