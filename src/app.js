@@ -90,7 +90,6 @@ class ZMicroApp {
      */
     loadPrefetchCode() {
         if(++this.prefetchCount >= 2) {
-            console.log('执行')
             this.execPrefetchCode();
         }
     }
@@ -98,7 +97,6 @@ class ZMicroApp {
      * 执行预加载资源的代码
      */
     execPrefetchCode() {
-        console.log('执行预加载代码...')
         this.execStyle(this.prefetchStyles);
         this.execScript(this.prefetchScripts);
     }
@@ -197,10 +195,8 @@ class ZMicroApp {
         }
         this.sandbox.start();
         Promise.resolve();
-        console.log('mount...')
         setTimeout(() => {
             try {
-                console.log('执行代码...')
                 this.execStyle(this.styleCodes);
                 this.execScript(this.scriptCodes);
                 this.sandbox.sideEffect.evt.dispatch('mount');
