@@ -3,11 +3,16 @@
  */
 class DiffSandbox {
   constructor() {
+    this.active = false;
     this.modifyMap = {} // 存放修改的属性
     this.windowSnapshot = {} // windows的快照
     // this.proxyWindow = window;
   }
   start() {
+    if(this.active) {
+        return ;
+    }
+    this.active = true;
     // 缓存window对象上的属性
     this.windowSnapshot = {}
     for (const item in window) {
@@ -18,6 +23,10 @@ class DiffSandbox {
     // })
   }
   stop() {
+    if(!this.active) {
+        return ;
+    }
+    this.active = false;
     // 还原window的属性
     for (const item in window) {
       if (this.windowSnapshot[item] !== window[item]) {
