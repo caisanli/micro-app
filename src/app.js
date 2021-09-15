@@ -2,7 +2,7 @@
 import { fetchResource, getUrlHost, getUrl, requestHostCallback } from './utils';
 import { parseHtml, scopedCssStyle, getPrefetchSource } from './utils/html';
 import Sandbox from './sandbox/index.js';
-
+import _JsMutationObserver from './utils/MutationObserver';
 class ZMicroApp {
     /**
      * 插入子系统html内容
@@ -20,13 +20,11 @@ class ZMicroApp {
      * 监听head元素，
      * 如果有新的style元素添加就设置css作用域
      * 也处理动态script
-     * 目前使用MutationObserver，未兼容IE10
      */
-    observerHead() {
+    observerHeadFn() {
         const head = document.querySelector('head');
         const config = { attributes: false, childList: true, subtree: false };
         const callback = (mutationsList) => {
-            // Use traditional 'for loops' for IE 11
             [...mutationsList].forEach(mutation => {
                 if (mutation.type !== 'childList') {
                     return ;
@@ -44,7 +42,7 @@ class ZMicroApp {
                     switch(nodeName) {
                         case 'STYLE':
                             this.headAddStyleIds.push(id);
-                            scopedCssStyle(node, this.name);
+                            scopedCssStyle(node, this);
                             break;
                         case 'SCRIPT':
                             this.headAddStyleIds.push(id);
@@ -54,11 +52,31 @@ class ZMicroApp {
                 })
             })
         };
-        const observer = new MutationObserver(callback);
+        const observer = new _JsMutationObserver(callback);
         observer.observe(head, config);
-        this.observer = observer;
+        this.observerHead = observer;
     }
-
+    /**
+     * 监听Body元素
+     * 只监听当前body下的子级（不是子子级）增删变化
+     * 如果有新增元素就设置name属性'_zxj_micro_' + name
+     */
+     observerBodyFn() {
+        const body = document.querySelector('body');
+        const config = { attributes: false, childList: true, subtree: false };
+        const callback = (mutationsList) => {
+            [...mutationsList].forEach(item => {
+                item.addedNodes.forEach(node => {
+                    const nodeName = node.nodeName;
+                    if(nodeName === 'STYLE' || nodeName === 'IFRAME') return ;
+                    node.setAttribute('name', 'zxj_micro_' + this.name);
+                })
+            })
+        };
+        const observer = new _JsMutationObserver(callback);
+        observer.observe(body, config);
+        this.observerBody = observer;
+    }
     /**
      * 解析入口文件
      * 返回一个容器元素，存放子系统html结构
@@ -118,6 +136,8 @@ class ZMicroApp {
         this.fetchCount = 0;
         // 存放JavaScript代码
         this.scriptCodes = [];
+        // 统一设置作用域名称
+        this.scopedName = `zxj_micro_` + name;
         // 存放css代码
         this.styleCodes = [];
         // 存放css样式的远程地址、内联代码
@@ -125,7 +145,8 @@ class ZMicroApp {
         // 存放JavaScript的远程地址、内联代码
         this.scripts = [];
         // MutationObserver实例
-        this.observer = null;
+        this.observerHead = null;
+        this.observerBody = null;
         // 预加载资源类型请求次数
         this.prefetchCount = 0;
         // 预加载script代码
@@ -189,7 +210,8 @@ class ZMicroApp {
         this.status = 'mount';
         window['_zxj_is_micro'] = true;
         // 监听head
-        this.observerHead();
+        this.observerHeadFn();
+        
         if(!prevStatusIsInit) {
             this.insertHtml();
         }
@@ -203,6 +225,7 @@ class ZMicroApp {
                 if(!prevStatusIsInit) {
                     this.execPrefetchCode();
                 }
+                this.observerBodyFn();
             } catch (error) {
                 console.log(error)
             }
@@ -219,7 +242,8 @@ class ZMicroApp {
         this.clearHeadStyle();
         this.sandbox.sideEffect.evt.dispatch('unmount');
         this.sandbox.stop();
-        this.observer && this.observer.disconnect();
+        this.observerHead && this.observerHead.disconnect();
+        this.observerBody && this.observerBody.disconnect();
         window['_zxj_is_micro'] = false;
     }
 }

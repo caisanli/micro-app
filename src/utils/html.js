@@ -106,7 +106,7 @@ function setLocalCssScoped(css, app) {
     style.textContent = css;
     document.body.appendChild(style);
     style.sheet.disabled = true;
-    scopedCssStyle(style, app.name);
+    scopedCssStyle(style, app);
     document.body.removeChild(style);
     return style.textContent;
 }
@@ -218,10 +218,10 @@ function parseStyle(parentNode, node, app) {
  * @param {*} node 当前link节点 
  * @param {*} name 作用域前缀
  */
-export function scopedCssStyle(node, name) {
+export function scopedCssStyle(node, app) {
     const cssRules = node.sheet.cssRules;
     const styleList = [];
-    parseCssRules(cssRules, styleList, name);
+    parseCssRules(cssRules, styleList, app);
     node.textContent = styleList.join(' ');
 }
 
@@ -231,13 +231,15 @@ export function scopedCssStyle(node, name) {
  * @param {*} styleList 
  * @param {*} name 
  */
-function parseCssRules(cssRules, styleList, name) {
+function parseCssRules(cssRules, styleList, app) {
+    const name = app.name;
+    const scopedName = app.scopedName;
     Array.from(cssRules).forEach(rule => {
         const type = rule.type;
         if(type === 4) { // @media 媒体查询
             const mediaStyleText = [];
             const conditionText = rule.media.mediaText;
-            parseCssRules(rule.cssRules, mediaStyleText, name);
+            parseCssRules(rule.cssRules, mediaStyleText, app);
             const newStyleText = `@media ${conditionText} { ${ mediaStyleText.join(' ') } }`;
             styleList.push(newStyleText);
         } else if(type === 5) { // @font-face
@@ -285,7 +287,7 @@ function parseCssRules(cssRules, styleList, name) {
                 select = select.trim();
                 // body、html选择器不设置作用域
                 if(!select.startsWith('body') && !select.startsWith('html') && !select.startsWith('@font-face')) {
-                    cssText = cssText.replace(select, `[name="zxj_micro_${name}"] ${select}`)
+                    cssText = cssText.replace(select, `[name="${ scopedName }"] ${select}`)
                 }
             });
             styleList.push(cssText);
