@@ -211,20 +211,25 @@ class ZMicroApp {
         window['_zxj_is_micro'] = true;
         // 监听head
         this.observerHeadFn();
-        
+
         if(!prevStatusIsInit) {
             this.insertHtml();
         }
+        // 开启沙箱
         this.sandbox.start();
-        Promise.resolve();
+        // 这是用setTimeout是为了防止页面卡顿，做了异步处理
         setTimeout(() => {
             try {
+                // 执行样式代码
                 this.execStyle(this.styleCodes);
+                // 执行script代码
                 this.execScript(this.scriptCodes);
+                // 触发mount事件
                 this.sandbox.sideEffect.evt.dispatch('mount');
                 if(!prevStatusIsInit) {
                     this.execPrefetchCode();
                 }
+                // 监听body
                 this.observerBodyFn();
             } catch (error) {
                 console.log(error)
@@ -239,10 +244,15 @@ class ZMicroApp {
             return ;
         }
         this.status = 'unmount';
+        // 清空动态添加的style元素
         this.clearHeadStyle();
+        // 触发unmount事件
         this.sandbox.sideEffect.evt.dispatch('unmount');
+        // 停止沙箱
         this.sandbox.stop();
+        // 取消监听head元素
         this.observerHead && this.observerHead.disconnect();
+        // 取消监听body元素
         this.observerBody && this.observerBody.disconnect();
         window['_zxj_is_micro'] = false;
     }

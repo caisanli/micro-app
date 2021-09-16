@@ -15,7 +15,9 @@ class Sandbox {
     // }
     this.id = '_zxj_micro_' + name;
     this.name = name;
+    // 副作用处理
     this.sideEffect = new SideEffect(window);
+    // 代理window
     this.proxyWindow = new DiffSandbox();
     this.active = false;
   }

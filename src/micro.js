@@ -5,10 +5,9 @@ import { MicroApp } from './app';
 import cache from './utils/cache';
 export default {
     name: 'MicroApp',
-    data: function data() {
+    data() {
         return {
-            children: '',
-            app: null
+            app: null // 子系统实例
         }
     },
     props: {
@@ -16,7 +15,7 @@ export default {
             type: String,
             default: ''
         },
-        url: { // 子系统入口地址
+        url: { // 子系统入口文件地址（index.html）
             type: String,
             default: ''
         }
