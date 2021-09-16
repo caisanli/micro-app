@@ -786,17 +786,76 @@ function parseCssRules(cssRules, styleList, app) {
     export default SideEffect;
    ```
    
+#### 3.7、路由处理
+路由处理是直接使用`VueRouter`控制，未做单独处理，目前主、子系统的路由模式都是`hash`，也可以弄成`history`模式，但是会有点麻烦，运维做处理、前端也需要做处理（想了想，好像用`history`的代价要低一点，就不会去在子系统的路由加什么前缀了）。
+由于`hash`模式不能设置`base`(基础路径)，所以子系统的路由配置都需要在已有路由配置套一层`系统前缀`路由，由于目前路由`path`配置都建议写成`绝对路径`，所以`path`都需要加上`/系统前缀`：
+```javascript
+// 微前端时需要在外面加一层路由
+const newRouters = [{
+    path: defaultSettings.prefix + '/*', // 必须加 "/*"
+    meta: { title: defaultSettings.title },
+    component: BlankLayout,
+    redirect: routers[0].path, // 默认重定向到第一个
+    children: routers // 原本路由
+}];
+```
+不过现在已有系统、PC模板在处理动态路由的时候都默认加上了前缀，所以后续新系统给后端的路由配置都不需要加前缀：
+```javascript
+/**
+ * 格式化树形结构数据 生成 vue-router 层级路由表
+ * @param routerMap
+ * @param parent
+ * @returns {*}
+ */
+export const generator = (routerMap, permisssions, parent) => {
+    return routerMap.map(item => {
+        const currentRouter = {
+            // 如果路由设置了 path，没有给404
+            path: item.path ? `${defaultSettings.prefix}${item.path}` : '/404',
+            // 其它代码
+            // ...
+        };
+        // 子菜单，递归处理
+        if (item.children && item.children.length > 0) {
+            // 重定向
+            item.redirect && (currentRouter.redirect = defaultSettings.prefix + item.redirect);
+        }
+        return currentRouter;
+    });
+};
+```
+以及在进行页面跳转的时候，也不需要加上前缀，因为这里对`VueRouter`的`push`方法做了代理，如果不存在前缀就默认加上前缀：
+```javascript
+// hack router push callback
+const originalPush = Router.prototype.push;
+Router.prototype.push = function push (location, onResolve, onReject) {
+    // 由于采用微前端且主系统采用的hash路由
+    // 所以需要在子系统的路由上再套一层路由，path为`/系统前缀/`如：'/infoget/'
+    // 且每个路由的path也会加上这个前缀，如'/infoget/other'
+    // 为了兼容以前的老代码，所以做了跳转拦截，如果当前path不存在前缀，就加上这个前缀
+    if (typeof location === 'string') {
+        if (!location.startsWith(defaultSettings.prefix)) {
+            location = defaultSettings.prefix + location;
+        }
+    } else if (location.path && !location.path.startsWith(defaultSettings.prefix)) {
+        location.path = defaultSettings.prefix + location.path;
+    }
 
+    if (onResolve || onReject) return originalPush.call(this, location, onResolve, onReject);
 
-
+    return originalPush.call(this, location).catch(err => err);
+};
+```
+注意：由于在主系统注册子系统路由的时候，`path`都会设置成`/系统前缀/*`，这样是为了匹配所有`/系统前缀/`下的路由，也是子系统张中路由切换的必要条件，所以主系统中就要避免`/系统前缀/other`这样的`path`，现在UAA已经出现了这样的问题。
 ### 4、需要优化的地方
 ----
-
+* 目前加载每一次子系统，内存就增加，而且是递增的，虽然生产环境上不会出什么大问题，也不可能有人有全系统，就算有也不可能每个子系统都去点一次。
+* 其它域的远程资源的处理
 ### 5、需要注意
 ----
 * 其它域的远程资源未处理，加载资源会存在跨域，如使用`百度地图`，到时候需要使用的时候再处理，有两种办法：
-  * 运维配置跨域域名，不过尽量还是不要麻烦运维。
-  * 框架配置忽略域名，以`script`标签加载。
+  * 运维配置跨域域名，尽量还是不要麻烦运维。
+  * 框架配置忽略域名，以`script`标签加载。（后面去验证下）
 * 在使用IE的时候，子系统使用的`zxj-ui`框架的一些组件传参和默认值失效，但是`智能机器人`系统就是正常的，还不知道原因，目前发现有问题的组件：`Modal`、`Menu`、`Rate`。
 * 子系统的资源引用尽量使用`绝对路径`，虽然框架已经处理了`backgroundImage`、`font-face`引用相对路径资源。
 * 虽然做了样式隔离，但是主系统的样式还是会影响子系统，主、子系统都要做好样式处理，尽量别写全局样式，特别是修改`zxj-ui`组件的样式时。
