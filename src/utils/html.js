@@ -117,15 +117,19 @@ function setLocalCssScoped(css, app) {
  * @param {*} app 
  */
 function recursionGetSource(element, app) {
+    const { disableStyleSandbox } = app.option;
     [...element.childNodes].forEach(child => {
         const nodeName = child.nodeName;
         switch(nodeName) {
             case 'META':
             case 'TITLE':
                 break;
-            case 'STYLE':
-                parseStyle(element, child, app);
+            case 'STYLE': {
+                if(disableStyleSandbox !== true) {
+                    parseStyle(element, child, app);
+                }
                 break;
+            }
             case 'LINK':
                 parseLink(element, child, app);
                 break;
@@ -146,20 +150,28 @@ function recursionGetSource(element, app) {
  */
 function parseScript(parentNode, node, app) {
     const src = node.getAttribute('src');
+    const { externalLinks } = app.option;
+    // 是否是外部链接，外部链接就不做处理
+    const isExternal = externalLinks.includes(src);
     if(src) { // 远程脚本
-        const newSrc = getAbsoluteHref(src, app.host);
-        app.scripts.push({
-            href: newSrc,
-            code: ''
-        });
-        
+        if(!isExternal) {
+            const newSrc = getAbsoluteHref(src, app.host);
+            app.scripts.push({
+                href: newSrc,
+                code: ''
+            });
+            const comment = document.createComment(`<script src="${newSrc}" />`);
+            parentNode.insertBefore(comment, node);
+            parentNode.removeChild(node);
+        }
     } else { // 内联脚本
         app.scripts.push({
             href: '',
             code: node.textContent
         });
+        parentNode.removeChild(node);
     }
-    parentNode.removeChild(node);
+    
 }
 
 /**
@@ -170,34 +182,40 @@ function parseScript(parentNode, node, app) {
  * @param {*} app 应用实例
  */
 function parseLink(parentNode, node, app) {
+    const { disableStyleSandbox, externalLinks } = app.option;
     const rel = node.getAttribute('rel');
     const href = node.getAttribute('href');
     const as = node.getAttribute('as');
     // const type = node.getAttribute('type');
-    const newHref = getAbsoluteHref(href, app.host); // getUrlHost(href) ? href : `${app.host}${href.startsWith('/') ? href: '/' + href}`;
+    // 是否是外部链接，外部链接就不做处理
+    const isExternal = externalLinks.includes(href);
+    if(!isExternal) return ;
     
+    const newHref = getAbsoluteHref(href, app.host); // getUrlHost(href) ? href : `${app.host}${href.startsWith('/') ? href: '/' + href}`;
     if(href && rel === 'stylesheet') { // 外部链接
-        app.links.push({
-            href: newHref,
-            code: ''
-        });
-        const comment = document.createComment(`<link href="${newHref}" rel="stylesheet" />`);
-        parentNode.insertBefore(comment, node);
-        parentNode.removeChild(node);
-    } else if (!as && rel === 'prefetch') { // 处理空闲时间加载的资源
-        const comment = document.createComment(`<link href="${newHref}" rel="prefetch" />`);
-        const result = /\.(js|css)$/.exec(newHref);
-        if(!result) {
-            node.setAttribute('href', newHref);
-        } else {
-            const type = result[1];
-            app.prefetchSource.push({
-                type,
-                href: newHref
-            })
+        if(disableStyleSandbox !== true) {
+            app.links.push({
+                href: newHref,
+                code: ''
+            });
+            const comment = document.createComment(`<link href="${newHref}" rel="stylesheet" />`);
             parentNode.insertBefore(comment, node);
             parentNode.removeChild(node);
         }
+    } else if (!as && rel === 'prefetch') { // 处理空闲时间加载的资源
+        // const comment = document.createComment(`<link href="${newHref}" rel="prefetch" />`);
+        // const result = /\.(js|css)$/.exec(newHref);
+        // if(!result) {
+        //     node.setAttribute('href', newHref);
+        // } else {
+        //     const type = result[1];
+        //     app.prefetchSource.push({
+        //         type,
+        //         href: newHref
+        //     })
+        //     parentNode.insertBefore(comment, node);
+        //     parentNode.removeChild(node);
+        // }
     } else { // 其他
         node.setAttribute('href', newHref);
     }

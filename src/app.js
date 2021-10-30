@@ -24,6 +24,7 @@ class ZMicroApp {
     observerHeadFn() {
         const head = document.querySelector('head');
         const config = { attributes: false, childList: true, subtree: false };
+        const { disableStyleSandbox } = this.option; 
         const callback = (mutationsList) => {
             [...mutationsList].forEach(mutation => {
                 if (mutation.type !== 'childList') {
@@ -40,10 +41,13 @@ class ZMicroApp {
                     const id = Math.round((Math.random() * 1000)) + '-' + Date.now();
                     node.id = id;
                     switch(nodeName) {
-                        case 'STYLE':
+                        case 'STYLE': {
                             this.headAddStyleIds.push(id);
-                            scopedCssStyle(node, this);
+                            if(!disableStyleSandbox === true) {
+                                scopedCssStyle(node, this);
+                            }
                             break;
+                        }
                         case 'SCRIPT':
                             this.headAddStyleIds.push(id);
                             break;
@@ -58,7 +62,7 @@ class ZMicroApp {
     }
     /**
      * 监听Body元素
-     * 只监听当前body下的子级（不是子子级）增删变化
+     * 只监听当前body下的子级（不是子子...级）增删变化
      * 如果有新增元素就设置name属性'_zxj_micro_' + name
      */
      observerBodyFn() {
@@ -98,7 +102,7 @@ class ZMicroApp {
     loadCode() {
         if(++this.fetchCount >= 2) {
             this.mount();
-            requestHostCallback(getPrefetchSource.bind(null, this));
+            // requestHostCallback(getPrefetchSource.bind(null, this));
         }
     }
     /**
@@ -123,11 +127,16 @@ class ZMicroApp {
      * @param {*} name 唯一值
      * @param {*} url 入口文件
      */
-    init(name, url) {
+    init(name, url, option) {
+        const defaultOpt = {
+            disableStyleSandbox: false,
+            externalLinks: []
+        }
         this.status = 'init';
         this.name = name;
         this.url = getUrl(url);
         this.container = null;
+        this.option = Object.assign(defaultOpt, option);
         this.host = getUrlHost(this.url);
         this.el = null;
         // 记录在head标签中动态添加的style、script
@@ -206,6 +215,7 @@ class ZMicroApp {
         if(this.status === 'mount') {
             return ;
         }
+        const { disableStyleSandbox } = this.option;
         const prevStatusIsInit = this.status === 'init';
         this.status = 'mount';
         window['_zxj_is_micro'] = true;
@@ -226,11 +236,13 @@ class ZMicroApp {
                 this.execScript(this.scriptCodes);
                 // 触发mount事件
                 this.sandbox.sideEffect.evt.dispatch('mount');
-                if(!prevStatusIsInit) {
-                    this.execPrefetchCode();
-                }
+                // if(!prevStatusIsInit) {
+                //     this.execPrefetchCode();
+                // }
                 // 监听body
-                this.observerBodyFn();
+                if(disableStyleSandbox !== true) {
+                    this.observerBodyFn();
+                }
             } catch (error) {
                 console.log(error)
             }

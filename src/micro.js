@@ -18,10 +18,19 @@ export default {
         url: { // 子系统入口文件地址（index.html）
             type: String,
             default: ''
+        },
+        /**
+         * option 相关配置信息
+         * @property disableStyleSandbox 是否禁用样式沙箱 默认值（false）
+         * @property externalLinks 外部链接不处理
+         */
+        option: { // 配置信息
+            type: Object,
+            default: () => {}
         }
     },
     mounted() {
-        const { name, url } = this;
+        const { name, url, option } = this;
         if(!name || !url) return ;
         // 从缓存中取子系统实例
         let app = cache[name];
@@ -31,7 +40,7 @@ export default {
         } else { // 不存在实例，就初始化
             this.app = new MicroApp();
             cache[name] = this.app;
-            this.app.init(name, url);
+            this.app.init(name, url, option);
         }
     },
     beforeDestroy() {
