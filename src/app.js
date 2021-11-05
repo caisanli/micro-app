@@ -1,6 +1,6 @@
 
-import { fetchResource, getUrlHost, getUrl, requestHostCallback } from './utils';
-import { parseHtml, scopedCssStyle, getPrefetchSource } from './utils/html';
+import { fetchResource, getUrlHost, getUrl } from './utils';
+import { parseHtml, scopedCssStyle } from './utils/html';
 import Sandbox from './sandbox/index.js';
 import _JsMutationObserver from './utils/MutationObserver';
 class ZMicroApp {
@@ -71,9 +71,18 @@ class ZMicroApp {
         const callback = (mutationsList) => {
             [...mutationsList].forEach(item => {
                 item.addedNodes.forEach(node => {
-                    const nodeName = node.nodeName;
-                    if(nodeName === 'STYLE' || nodeName === 'IFRAME') return ;
-                    node.setAttribute('name', 'zxj_micro_' + this.name);
+                    try {
+                        if(!node) return ;
+                        const nodeName = node.nodeName;
+                        if(nodeName === 'STYLE' || nodeName === 'IFRAME') return ;
+                        this.addNodes.push(node);
+                        node.setAttribute('name', 'zxj_micro_' + this.name);
+                    } catch (error) {
+                        console.log(error)
+                    }
+                })
+                item.removedNodes.forEach(rnode => {
+                    this.addNodes = this.addNodes.filter(node => node !== rnode);
                 })
             })
         };
@@ -168,6 +177,8 @@ class ZMicroApp {
         this.sandbox = new Sandbox(name);
         // 处理入口文件
         this.parseEntry(this.mount);
+        // 子系统添加的元素
+        this.addNodes = [];
     }
     /**
      * 执行css代码
@@ -202,11 +213,34 @@ class ZMicroApp {
      * 清空head标签动态添加的style、script标签
      */
     clearHeadStyle() {
-        const head = document.querySelector('head');
-        this.headAddStyleIds.forEach(id => {
-           head.removeChild(document.getElementById(id))
-        })
-        this.headAddStyleIds = [];
+        try {
+            const head = document.querySelector('head');
+            this.headAddStyleIds.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    head.removeChild(document.getElementById(id))
+                }
+            })
+            this.headAddStyleIds = [];
+        } catch (error) {
+            console.log(error)
+        }
+    }
+    /**
+     * 清空动态添加到body的元素
+     */
+     clearNodes() {
+        try {
+            const body = document.body;
+            this.addNodes.forEach(node => {
+                if(body.contains(node)) {
+                    body.removeChild(node);
+                }
+            })
+            this.addNodes = [];
+        } catch (error) {
+            console.log(error)   
+        }
     }
     /**
      * 挂载
@@ -258,6 +292,8 @@ class ZMicroApp {
         this.status = 'unmount';
         // 清空动态添加的style元素
         this.clearHeadStyle();
+        // 清空动态添加的元素
+        this.clearNodes();
         // 触发unmount事件
         this.sandbox.sideEffect.evt.dispatch('unmount');
         // 停止沙箱
