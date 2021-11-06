@@ -1,5 +1,5 @@
 
-import { fetchResource, getUrlHost, getUrl } from './utils';
+import { fetchResource, getUrlOrigin, getUrl } from './utils';
 import { parseHtml, scopedCssStyle } from './utils/html';
 import Sandbox from './sandbox/index.js';
 import _JsMutationObserver from './utils/MutationObserver';
@@ -146,7 +146,7 @@ class ZMicroApp {
         this.url = getUrl(url);
         this.container = null;
         this.option = Object.assign(defaultOpt, option);
-        this.host = getUrlHost(this.url);
+        this.origin = getUrlOrigin(this.url);
         this.el = null;
         // 记录在head标签中动态添加的style、script
         this.headAddStyleIds = [];

@@ -35,15 +35,25 @@ export function ajax(opt = {}) {
 }
 
 /**
- * 获取URL中的host地址
+ * 获取URL中的Origin地址
  * @param {*} url 
  * @returns 
  */
-export function getUrlHost(url) {
-    const hostReg = /(^www\.[^/]+[\da-zA-Z])|(^http[s]?:\/\/[^/]+[\d]+)/;
-    const result = hostReg.exec(url);
+export function getUrlOrigin(url) {
+    const reg = /(^www\.[^/]+[\da-zA-Z])|(^http[s]?:\/\/[^/]+)/;
+    const result = reg.exec(url);
     if(!result) return '';
     return result[0];
+}
+
+
+/**
+ * 是否是绝对路径
+ * @param {*} url 
+ */
+export function isAbsolutePath(url) {
+    const reg = /(^www\.)|(^http[s]?:\/\/)/;
+    return reg.test(url);
 }
 
 /**

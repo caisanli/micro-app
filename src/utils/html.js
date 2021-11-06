@@ -2,7 +2,7 @@
  * 处理入口文件的一些方法
  */
 
-import { getUrlHost, fetchResource } from './index';
+import { getUrlOrigin, fetchResource } from './index';
 
 /**
  * 初始入口文件的html内容
@@ -189,9 +189,10 @@ function parseLink(parentNode, node, app) {
     // const type = node.getAttribute('type');
     // 是否是外部链接，外部链接就不做处理
     const isExternal = externalLinks.includes(href);
-    if(!isExternal) return ;
+    // console.log('isExternal：', isExternal)
+    if(isExternal) return ;
     
-    const newHref = getAbsoluteHref(href, app.host); // getUrlHost(href) ? href : `${app.host}${href.startsWith('/') ? href: '/' + href}`;
+    const newHref = getAbsoluteHref(href, app.origin); // getUrlOrigin(href) ? href : `${app.host}${href.startsWith('/') ? href: '/' + href}`;
     if(href && rel === 'stylesheet') { // 外部链接
         if(disableStyleSandbox !== true) {
             app.links.push({
@@ -320,5 +321,6 @@ function parseCssRules(cssRules, styleList, app) {
  * @returns 
  */
 function getAbsoluteHref(href, host) {
-    return getUrlHost(href) ? href : `${host}${href.startsWith('/') ? href: '/' + href}`;
+    console.log('href:', href)
+    return getUrlOrigin(href) ? href : `${host}${href.startsWith('/') ? href: '/' + href}`;
 }
