@@ -114,7 +114,7 @@
 
     ```javascript
     
-    import { fetchResource, getUrlHost, getUrl, requestHostCallback } from './utils';
+    import { fetchResource, getUrlOrigin, getUrl, requestHostCallback } from './utils';
     import { parseHtml, scopedCssStyle, getPrefetchSource } from './utils/html';
     import Sandbox from './sandbox/index.js';
     import _JsMutationObserver from './utils/MutationObserver';
@@ -243,7 +243,7 @@
             this.name = name;
             this.url = getUrl(url);
             this.container = null;
-            this.host = getUrlHost(this.url);
+            this.host = getUrlOrigin(this.url);
             this.el = null;
             // 记录在head标签中动态添加的style、script
             this.headAddStyleIds = [];
@@ -868,7 +868,7 @@ Router.prototype.push = function push (location, onResolve, onReject) {
  * 处理入口文件的一些方法
  */
 
-import { getUrlHost, fetchResource } from './index';
+import { getUrlOrigin, fetchResource } from './index';
 
 /**
  * 初始入口文件的html内容
@@ -1040,7 +1040,7 @@ function parseLink(parentNode, node, app) {
     const href = node.getAttribute('href');
     const as = node.getAttribute('as');
     // const type = node.getAttribute('type');
-    const newHref = getAbsoluteHref(href, app.host); // getUrlHost(href) ? href : `${app.host}${href.startsWith('/') ? href: '/' + href}`;
+    const newHref = getAbsoluteHref(href, app.host); // getUrlOrigin(href) ? href : `${app.host}${href.startsWith('/') ? href: '/' + href}`;
     
     if(href && rel === 'stylesheet') { // 外部链接
         app.links.push({
@@ -1168,6 +1168,6 @@ function parseCssRules(cssRules, styleList, app) {
  * @returns 
  */
 function getAbsoluteHref(href, host) {
-    return getUrlHost(href) ? href : `${host}${href.startsWith('/') ? href: '/' + href}`;
+    return getUrlOrigin(href) ? href : `${host}${href.startsWith('/') ? href: '/' + href}`;
 }
 ```
