@@ -243,7 +243,7 @@
             this.name = name;
             this.url = getUrl(url);
             this.container = null;
-            this.host = getUrlOrigin(this.url);
+            this.origin = getUrlOrigin(this.url);
             this.el = null;
             // 记录在head标签中动态添加的style、script
             this.headAddStyleIds = [];
@@ -1013,7 +1013,7 @@ function recursionGetSource(element, app) {
 function parseScript(parentNode, node, app) {
     const src = node.getAttribute('src');
     if(src) { // 远程脚本
-        const newSrc = getAbsoluteHref(src, app.host);
+        const newSrc = getAbsoluteHref(src, app.origin);
         app.scripts.push({
             href: newSrc,
             code: ''
@@ -1040,7 +1040,7 @@ function parseLink(parentNode, node, app) {
     const href = node.getAttribute('href');
     const as = node.getAttribute('as');
     // const type = node.getAttribute('type');
-    const newHref = getAbsoluteHref(href, app.host); // getUrlOrigin(href) ? href : `${app.host}${href.startsWith('/') ? href: '/' + href}`;
+    const newHref = getAbsoluteHref(href, app.origin); // getUrlOrigin(href) ? href : `${app.origin}${href.startsWith('/') ? href: '/' + href}`;
     
     if(href && rel === 'stylesheet') { // 外部链接
         app.links.push({
@@ -1162,12 +1162,12 @@ function parseCssRules(cssRules, styleList, app) {
 }
 
 /**
- * 根据远程资源地址和及应用host地址拼接绝对路径
+ * 根据远程资源地址和及应用origin地址拼接绝对路径
  * @param {*} href 
- * @param {*} host 
+ * @param {*} origin 
  * @returns 
  */
-function getAbsoluteHref(href, host) {
-    return getUrlOrigin(href) ? href : `${host}${href.startsWith('/') ? href: '/' + href}`;
+function getAbsoluteHref(href, origin) {
+    return getUrlOrigin(href) ? href : `${origin}${href.startsWith('/') ? href: '/' + href}`;
 }
 ```

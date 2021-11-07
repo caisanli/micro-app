@@ -33,12 +33,12 @@ class ZMicroApp {
                 if(!mutation.addedNodes || !mutation.addedNodes.length) {
                     return ;
                 }
-                [...mutation.addedNodes].forEach(node => {
+                [...mutation.addedNodes].forEach((node, index) => {
                     const nodeName = node.nodeName;
                     if(nodeName !== 'STYLE' && nodeName !== 'SCRIPT') {
                         return ;
                     }
-                    const id = Math.round((Math.random() * 1000)) + '-' + Date.now();
+                    const id = Math.round((Math.random() * 1000)) + '-' + index + '-' + Date.now();
                     node.id = id;
                     switch(nodeName) {
                         case 'STYLE': {
