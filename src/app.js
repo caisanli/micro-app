@@ -138,7 +138,7 @@ class ZMicroApp {
      */
     init(name, url, option) {
         const defaultOpt = {
-            disableStyleSandbox: false,
+            disableStyleSandbox: true,
             externalLinks: []
         }
         this.status = 'init';
