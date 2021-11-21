@@ -1,21 +1,15 @@
 <template>
-  <div>
-    <basic-layout />
-    <!-- <h1>主应用</h1>
-    <ul>
-        <li><router-link to="/">首页</router-link></li>
-        <li><router-link to="/vue2/">vue2子应用</router-link></li>
-    </ul>
-    <router-view /> -->
-  </div>
+  <img alt="Vue logo" src="./assets/logo.png">
+  <HelloWorld msg="Welcome to Your Vue.js App"/>
 </template>
 
 <script>
-import BasicLayout from '@/layout/BasicLayout.vue';
+import HelloWorld from './components/HelloWorld.vue'
+
 export default {
   name: 'App',
   components: {
-    BasicLayout
+    HelloWorld
   }
 }
 </script>

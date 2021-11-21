@@ -1,9 +1,9 @@
 <template>
-  <div id="child">
+  <div>
     <h1>子应用</h1>
     <ul>
-        <li><router-link to="/child/index">首页</router-link></li>
-        <li><router-link to="/child/password">密码</router-link></li>
+        <li><router-link to="/vue2/index">首页</router-link></li>
+        <li><router-link to="/vue2/password">密码</router-link></li>
     </ul>
     <router-view />
   </div>
@@ -17,15 +17,15 @@ export default {
       
   },
   mounted() {
-    document.body.addEventListener('click', function() {
-        console.log('click')
-    })
+    // document.body.addEventListener('click', function() {
+    //     console.log('click')
+    // })
   }
 }
 </script>
 
 <style>
-#child {
+#vue2 {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

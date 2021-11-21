@@ -1,8 +1,8 @@
 module.exports = {
-    publicPath: '/child',
+    publicPath: '/vue2',
     configureWebpack: {
         output: {
-            jsonpFunction: 'childJsonpFunction'
+            jsonpFunction: 'vue2JsonpFunction'
         },
     },
     devServer: {

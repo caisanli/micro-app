@@ -33,7 +33,7 @@
     
 </style>
 <style>
-body, html, #child {
+body, html, #vue2 {
         height: 100%;
     }
 </style>

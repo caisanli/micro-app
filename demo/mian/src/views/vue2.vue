@@ -1,9 +1,6 @@
 /* eslint-disable */
 <template>
-    <div>
-        子应用
-        <micro-app name="child" url="/child/" />
-    </div>
+    <micro-app name="vue2" url="/vue2" />
 </template>
 
 <script>
