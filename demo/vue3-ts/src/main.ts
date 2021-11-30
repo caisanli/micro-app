@@ -13,7 +13,7 @@ function createVueApp(): VueApp {
   return app;
 }
 
-const isMicro = window['_zxj_is_micro'];
+const isMicro:boolean = window['_zxj_is_micro'] || false;
 
 if(isMicro && microEffect) {
 
@@ -25,6 +25,7 @@ if(isMicro && microEffect) {
 
   microEffect.evt.on('unmount', () => {
     app.unmount();
+
   })
 
 } else {
