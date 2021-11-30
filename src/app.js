@@ -1,6 +1,6 @@
 
 import { fetchResource, getUrlOrigin, getUrl } from './utils';
-import { parseHtml, scopedCssStyle } from './utils/html';
+import { parseHtml, scopedCssStyle, createScriptElement } from './utils/html';
 import Sandbox from './sandbox/index.js';
 import _JsMutationObserver from './utils/MutationObserver';
 class ZMicroApp {
@@ -14,7 +14,7 @@ class ZMicroApp {
         [...cloneContainer.childNodes].forEach(node => {
             fragment.appendChild(node)
         })
-        this.el.appendChild(fragment);
+        this.el && this.el.appendChild(fragment);
     }
     /**
      * 监听head元素，
@@ -144,10 +144,12 @@ class ZMicroApp {
         this.status = 'init';
         this.name = name;
         this.url = getUrl(url);
+        // 缓存容器dom
         this.container = null;
+         // 真实容器dom
+        this.el = null;
         this.option = Object.assign(defaultOpt, option);
         this.origin = getUrlOrigin(this.url);
-        this.el = null;
         // 记录在head标签中动态添加的style、script
         this.headAddStyleIds = [];
         // 用于css、javascript资源请求计数
@@ -200,8 +202,12 @@ class ZMicroApp {
      */
     execScript(scriptCodes) {
         try {
-            scriptCodes.forEach(code => {
-                code = this.sandbox.bindScope(code);
+            scriptCodes.forEach(item => {
+                if(item.isExternal) { // 是远程链接
+                    createScriptElement(this, item);
+                    return ;
+                }
+                const code = this.sandbox.bindScope(item.code);
                 Function(code)();
                 // (0, eval)(this.sandbox.bindScope(code))
             })

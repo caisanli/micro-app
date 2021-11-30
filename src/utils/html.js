@@ -21,36 +21,9 @@ export function parseHtml(html, app) {
     return parent;
 }
 
-/**
- * 获取预加载资源
- * @param {*} app 
- */
-export function getPrefetchSource(app) {
-    const source = app.prefetchSource;
-    const jsList = [], cssList = [];
-    source.forEach(item => {
-        const { type, href } = item;
-        switch(type) {
-            case 'css':
-                cssList.push(setRemoteCssScoped(href, app));
-                break;
-            case 'js':
-                jsList.push(fetchResource(href));
-                break;
-        }
-    })
-    Promise.all(jsList).then(scripts => {
-        app.prefetchScripts = scripts;
-        app.loadPrefetchCode();
-    });
-    Promise.all(cssList).then(styles => {
-        app.prefetchStyles = styles;
-        app.loadPrefetchCode();
-    });
-}
 
 /**
- * 获取远程css样式
+ * 获取css样式
  * @param {*} app 应用实例
  */
 function getStyle(app) {
@@ -70,7 +43,7 @@ function getStyle(app) {
 }
 
 /**
- * 获取远程JavaScript
+ * 获取JavaScript
  * @param {*} app 应用实例
  */
 function getScript(app) {
@@ -78,14 +51,36 @@ function getScript(app) {
     const list = [];
     scripts.forEach(item => {
         if(item.href) {
-            list.push(fetchResource(item.href));
+            list.push(getRemoteScript(item));
         } else {
-            list.push(item.code)
+            list.push({code: item.code})
         }
     })
     Promise.all(list).then(codes => {
         app.scriptCodes = codes;
         app.loadCode();
+    })
+}
+
+/**
+ * 获取远程JavaScript
+ * @param {*} item 
+ * @returns 
+ */
+function getRemoteScript(item) {
+    const obj = {
+        isExternal: item.isExternal,
+        module: item.module,
+        code: '',
+        href: item.href,
+        type: item.type
+    }
+    if(item.isExternal) {
+        return Promise.resolve(obj)
+    }
+    return fetchResource(item.href).then(code => {
+        obj.code = code;
+        return Promise.resolve(obj)
     })
 }
 
@@ -150,28 +145,30 @@ function recursionGetSource(element, app) {
  */
 function parseScript(parentNode, node, app) {
     const src = node.getAttribute('src');
-    const { externalLinks } = app.option;
-    // 是否是外部链接，外部链接就不做处理
-    const isExternal = externalLinks.includes(src);
+    const type = node.getAttribute('type') || 'text/javascript';
     if(src) { // 远程脚本
-        if(!isExternal) {
-            const newSrc = getAbsoluteHref(src, app.origin);
-            app.scripts.push({
-                href: newSrc,
-                code: ''
-            });
-            const comment = document.createComment(`<script src="${newSrc}" />`);
-            parentNode.insertBefore(comment, node);
-            parentNode.removeChild(node);
-        }
+        // 是否是外部链接，外部链接就不做处理
+        const { externalLinks } = app.option;
+        const isExternal = externalLinks.includes(src);
+        const newSrc = getAbsoluteHref(src, app.origin);
+        app.scripts.push({
+            href: newSrc,
+            code: '',
+            type,
+            isExternal
+        });
+        const comment = document.createComment(`<script src="${newSrc}" />`);
+        parentNode.insertBefore(comment, node);
+        parentNode.removeChild(node);
     } else { // 内联脚本
         app.scripts.push({
             href: '',
-            code: node.textContent
+            code: node.textContent,
+            type,
+            isExternal: false
         });
         parentNode.removeChild(node);
     }
-    
 }
 
 /**
@@ -191,7 +188,7 @@ function parseLink(parentNode, node, app) {
     const isExternal = externalLinks.includes(href);
     if(isExternal) return ;
     
-    const newHref = getAbsoluteHref(href, app.origin); // getUrlOrigin(href) ? href : `${app.origin}${href.startsWith('/') ? href: '/' + href}`;
+    const newHref = getAbsoluteHref(href, app.origin);
     if(href && rel === 'stylesheet') { // 外部链接
         if(disableStyleSandbox !== true) {
             app.links.push({
@@ -203,19 +200,7 @@ function parseLink(parentNode, node, app) {
             parentNode.removeChild(node);
         }
     } else if (!as && rel === 'prefetch') { // 处理空闲时间加载的资源
-        // const comment = document.createComment(`<link href="${newHref}" rel="prefetch" />`);
-        // const result = /\.(js|css)$/.exec(newHref);
-        // if(!result) {
-        //     node.setAttribute('href', newHref);
-        // } else {
-        //     const type = result[1];
-        //     app.prefetchSource.push({
-        //         type,
-        //         href: newHref
-        //     })
-        //     parentNode.insertBefore(comment, node);
-        //     parentNode.removeChild(node);
-        // }
+        // ...
     } else { // 其他
         node.setAttribute('href', newHref);
     }
@@ -321,4 +306,16 @@ function parseCssRules(cssRules, styleList, app) {
  */
 function getAbsoluteHref(href, origin) {
     return getUrlOrigin(href) ? href : `${origin}${href.startsWith('/') ? href: '/' + href}`;
+}
+
+/**
+ * 创建script标签
+ * @param {*} href 
+ * @param {*} isModule 
+ */
+export function createScriptElement(app, {href, type}) {
+    const scriptElem = document.createElement('script');
+    scriptElem.src = href;
+    scriptElem.type = type;
+    app.el.appendChild(scriptElem);
 }
