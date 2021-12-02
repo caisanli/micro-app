@@ -24,7 +24,7 @@ class ZMicroApp {
     observerHeadFn() {
         const head = document.querySelector('head');
         const config = { attributes: false, childList: true, subtree: false };
-        const { disableStyleSandbox } = this.option; 
+        const { disableStyleSandbox } = this.option;
         const callback = (mutationsList) => {
             [...mutationsList].forEach(mutation => {
                 if (mutation.type !== 'childList') {
@@ -43,7 +43,7 @@ class ZMicroApp {
                     switch(nodeName) {
                         case 'STYLE': {
                             this.headAddStyleIds.push(id);
-                            if(!disableStyleSandbox === true) {
+                            if(disableStyleSandbox !== true) {
                                 scopedCssStyle(node, this);
                             }
                             break;
@@ -52,7 +52,7 @@ class ZMicroApp {
                             this.headAddStyleIds.push(id);
                             break;
                     }
-                    
+
                 })
             })
         };
@@ -245,7 +245,7 @@ class ZMicroApp {
             })
             this.addNodes = [];
         } catch (error) {
-            console.log(error)   
+            console.log(error)
         }
     }
     /**
@@ -255,12 +255,9 @@ class ZMicroApp {
         if(this.status === 'mount') {
             return ;
         }
-        const { disableStyleSandbox } = this.option;
         const prevStatusIsInit = this.status === 'init';
         this.status = 'mount';
         window['_zxj_is_micro'] = true;
-        // 监听head
-        this.observerHeadFn();
 
         if(!prevStatusIsInit) {
             this.insertHtml();
@@ -276,13 +273,10 @@ class ZMicroApp {
                 this.execScript(this.scriptCodes);
                 // 触发mount事件
                 this.sandbox.sideEffect.evt.dispatch('mount');
-                // if(!prevStatusIsInit) {
-                //     this.execPrefetchCode();
-                // }
+                // 监听head
+                this.observerHeadFn();
                 // 监听body
-                if(disableStyleSandbox !== true) {
-                    this.observerBodyFn();
-                }
+                this.observerBodyFn();
             } catch (error) {
                 console.log(error)
             }
