@@ -8,7 +8,10 @@ const routes: Array<RouteRecordRaw> = [{
   redirect: '/vue3-ts/index',
   children: [{
     path: '/vue3-ts/index',
-    component: () => import(/* webpackChunkName: "about" */ '@/views/index.vue'),
+    component: () => import(/* webpackChunkName: "index" */ '@/views/index.vue'),
+  }, {
+    path: '/vue3-ts/blog',
+    component: () => import(/* webpackChunkName: "user" */ '@/views/blog.vue'),
   }],
 }];
 

@@ -14,4 +14,8 @@ export default [{
   name: 'vue3-ts',
   path: '/vue3-ts/*',
   component: () => import('@/views/vue3-ts')
+}, {
+  name: 'vite',
+  path: '/vite/*',
+  component: () => import('@/views/vite')
 }]

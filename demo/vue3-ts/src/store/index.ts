@@ -1,9 +1,15 @@
 import { createStore } from 'vuex';
+import getters from './getters';
 
 export default createStore({
-  state: {
+  state() {
+    return {
+
+    };
   },
+  getters,
   mutations: {
+
   },
   actions: {
   },
