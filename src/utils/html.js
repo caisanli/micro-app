@@ -8,7 +8,7 @@ import { getUrlOrigin, fetchResource } from './index';
  * 初始入口文件的html内容
  * @param {*} html html字符串
  * @param {*} app 子应用实例
- * @returns 
+ * @returns
  */
 export function parseHtml(html, app) {
     const parent = document.createElement('div');
@@ -53,7 +53,7 @@ function getScript(app) {
         if(item.href) {
             list.push(getRemoteScript(item));
         } else {
-            list.push({code: item.code})
+            list.push({code: item.code, isModule: item.isModule})
         }
     })
     Promise.all(list).then(codes => {
@@ -64,13 +64,13 @@ function getScript(app) {
 
 /**
  * 获取远程JavaScript
- * @param {*} item 
- * @returns 
+ * @param {*} item
+ * @returns
  */
 function getRemoteScript(item) {
     const obj = {
         isExternal: item.isExternal,
-        module: item.module,
+        isModule: item.isModule,
         code: '',
         href: item.href,
         type: item.type
@@ -86,9 +86,9 @@ function getRemoteScript(item) {
 
 /**
  * 设置远程css作用域
- * @param {*} href 
- * @param {*} app 
- * @returns 
+ * @param {*} href
+ * @param {*} app
+ * @returns
  */
 function setRemoteCssScoped(href, app) {
     return fetchResource(href).then(css => {
@@ -108,8 +108,8 @@ function setLocalCssScoped(css, app) {
 
 /**
  * 获取html中的style、script标签
- * @param {*} element 
- * @param {*} app 
+ * @param {*} element
+ * @param {*} app
  */
 function recursionGetSource(element, app) {
     const { disableStyleSandbox } = app.option;
@@ -133,7 +133,7 @@ function recursionGetSource(element, app) {
                 break;
         }
     })
-    
+
 }
 
 /**
@@ -146,6 +146,10 @@ function recursionGetSource(element, app) {
 function parseScript(parentNode, node, app) {
     const src = node.getAttribute('src');
     const type = node.getAttribute('type') || 'text/javascript';
+    const isModule = type === 'module'; // 是否是module
+    if(isModule) {
+        app.moduleCount++;
+    }
     if(src) { // 远程脚本
         // 是否是外部链接，外部链接就不做处理
         const { externalLinks } = app.option;
@@ -155,6 +159,7 @@ function parseScript(parentNode, node, app) {
             href: newSrc,
             code: '',
             type,
+            isModule,
             isExternal
         });
         const comment = document.createComment(`<script src="${newSrc}" />`);
@@ -165,6 +170,7 @@ function parseScript(parentNode, node, app) {
             href: '',
             code: node.textContent,
             type,
+            isModule,
             isExternal: false
         });
         parentNode.removeChild(node);
@@ -187,7 +193,7 @@ function parseLink(parentNode, node, app) {
     // 是否是外部链接，外部链接就不做处理
     const isExternal = externalLinks.includes(href);
     if(isExternal) return ;
-    
+
     const newHref = getAbsoluteHref(href, app.origin);
     if(href && rel === 'stylesheet') { // 外部链接
         if(disableStyleSandbox !== true) {
@@ -218,7 +224,7 @@ function parseStyle(parentNode, node, app) {
 
 /**
  * 设置样式作用域
- * @param {*} node 当前link节点 
+ * @param {*} node 当前link节点
  * @param {*} name 作用域前缀
  */
 export function scopedCssStyle(node, app) {
@@ -230,9 +236,9 @@ export function scopedCssStyle(node, app) {
 
 /**
  * 解析样式规则并添加作用域前缀
- * @param {*} cssRules 
- * @param {*} styleList 
- * @param {*} name 
+ * @param {*} cssRules
+ * @param {*} styleList
+ * @param {*} name
  */
 function parseCssRules(cssRules, styleList, app) {
     const name = app.name;
@@ -274,7 +280,7 @@ function parseCssRules(cssRules, styleList, app) {
         } else { // 普通选择器
             const selectorText = rule.selectorText || '';
             let cssText = rule.cssText || '';
-            
+
             // 处理background相对路径
             if(rule.style && rule.style.backgroundImage) {
                 let backgroundImage = rule.style.backgroundImage;
@@ -300,9 +306,9 @@ function parseCssRules(cssRules, styleList, app) {
 
 /**
  * 根据远程资源地址和及应用origin地址拼接绝对路径
- * @param {*} href 
- * @param {*} origin 
- * @returns 
+ * @param {*} href
+ * @param {*} origin
+ * @returns
  */
 function getAbsoluteHref(href, origin) {
     return getUrlOrigin(href) ? href : `${origin}${href.startsWith('/') ? href: '/' + href}`;
@@ -310,12 +316,55 @@ function getAbsoluteHref(href, origin) {
 
 /**
  * 创建script标签
- * @param {*} href 
- * @param {*} isModule 
+ * @param {*} href
+ * @param {*} isModule
  */
-export function createScriptElement(app, {href, type}) {
+export function createScriptElement(app, {href, type, code, isModule}) {
     const scriptElem = document.createElement('script');
-    scriptElem.src = href;
+    if(isModule) {
+        // 监听module加载完成
+        scriptElem.addEventListener('load', () => {
+            if(--app.moduleCount <= 0) {
+                app.execModuleMount();
+            }
+        });
+        // 这里 basename 需要和子应用vite.config.js中base的配置保持一致
+        const name = app.name;
+        // eslint-disable-next-line
+        const reg = new RegExp(`(from|import)(\\s*['"])(\/${name}\/)`, 'g');
+        const newCode = code.replace(reg, all => {
+            return all.replace(`/${name}/`, `${app.url}/`);
+        })
+        const blob = new Blob([newCode], { type: 'text/javascript' })
+        scriptElem.src = URL.createObjectURL(blob);
+    } else {
+        scriptElem.src = href;
+    }
     scriptElem.type = type;
     app.el.appendChild(scriptElem);
 }
+
+// function runCode2InlineScript (
+//     url: string,
+//     code: string,
+//     module: boolean,
+//     scriptElement: HTMLScriptElement,
+//     callback?: moduleCallBack,
+// ): void {
+//     if (module) {
+//         // module script is async, transform it to a blob for subsequent operations
+//         const blob = new Blob([code], { type: 'text/javascript' })
+//         scriptElement.src = URL.createObjectURL(blob)
+//         scriptElement.setAttribute('type', 'module')
+//         if (callback) {
+//             callback.moduleCount && callback.moduleCount--
+//             scriptElement.onload = callback.bind(scriptElement, callback.moduleCount === 0)
+//         }
+//     } else {
+//         scriptElement.textContent = code
+//     }
+//
+//     if (!url.startsWith('inline-')) {
+//         scriptElement.setAttribute('data-origin-src', url)
+//     }
+// }

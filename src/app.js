@@ -110,8 +110,10 @@ class ZMicroApp {
      */
     loadCode() {
         if(++this.fetchCount >= 2) {
+            // if(this)
+            this.hasModule = this.moduleCount > 0;
+            this.cacheModuleCount = this.moduleCount;
             this.mount();
-            // requestHostCallback(getPrefetchSource.bind(null, this));
         }
     }
     /**
@@ -169,6 +171,12 @@ class ZMicroApp {
         this.observerBody = null;
         // 预加载资源类型请求次数
         this.prefetchCount = 0;
+        // 是否有module
+        this.hasModule = false;
+        // 记录module的数量
+        this.moduleCount = 0;
+        // 缓存module的数量
+        this.cacheModuleCount = 0;
         // 预加载script代码
         this.prefetchScripts = [];
         // 预加载css样式代码
@@ -203,7 +211,7 @@ class ZMicroApp {
     execScript(scriptCodes) {
         try {
             scriptCodes.forEach(item => {
-                if(item.isExternal) { // 是远程链接
+                if(item.isExternal || item.isModule) { // 是远程链接
                     createScriptElement(this, item);
                     return ;
                 }
@@ -214,6 +222,14 @@ class ZMicroApp {
         } catch (error) {
             console.log(error);
         }
+    }
+    /**
+     * 当所有module都加载完成后
+     * 执行module加载完成事件
+     */
+    execModuleMount() {
+        this.sandbox.sideEffect.evt.dispatch('module-mount');
+        this.moduleCount = this.cacheModuleCount;
     }
     /**
      * 清空head标签动态添加的style、script标签
