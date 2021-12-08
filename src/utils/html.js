@@ -4,6 +4,9 @@
 
 import { getUrlOrigin, fetchResource } from './index';
 
+// 是否是生产环境
+export const isProd = process.env.NODE_ENV !== 'development';
+
 /**
  * 初始入口文件的html内容
  * @param {*} html html字符串
@@ -53,7 +56,7 @@ function getScript(app) {
         if(item.href) {
             list.push(getRemoteScript(item));
         } else {
-            list.push({code: item.code, isModule: item.isModule})
+            list.push({code: item.code, type: item.type, isModule: item.isModule})
         }
     })
     Promise.all(list).then(codes => {
@@ -147,6 +150,10 @@ function parseScript(parentNode, node, app) {
     const src = node.getAttribute('src');
     const type = node.getAttribute('type') || 'text/javascript';
     const isModule = type === 'module'; // 是否是module
+    const isNomodule = node.hasAttribute('nomodule');
+    if(isNomodule) {
+        return ;
+    }
     if(isModule) {
         app.moduleCount++;
     }
@@ -329,13 +336,39 @@ export function createScriptElement(app, {href, type, code, isModule}) {
             }
         });
         // 这里 basename 需要和子应用vite.config.js中base的配置保持一致
-        const name = app.name;
-        // eslint-disable-next-line
-        const reg = new RegExp(`(from|import)(\\s*['"])(\/${name}\/)`, 'g');
-        const newCode = code.replace(reg, all => {
-            return all.replace(`/${name}/`, `${app.url}/`);
-        })
-        const blob = new Blob([newCode], { type: 'text/javascript' })
+        // const name = app.name;
+        // // eslint-disable-next-line
+        // const firstReg = new RegExp(`(from|import)(\\s*['"])(\/${name}\/)`, 'g');
+        // // eslint-disable-next-line
+        // const nextRef = new RegExp(`[\\W]import\\(["']/${name}\/`, 'g');
+        // const newCode = code.replace(firstReg, all => {
+        //     return all.replace(`/${name}/`, `${app.url}/`);
+        // }).replace(nextRef, all => {
+        //     return all.replace(`/${name}/`, `${app.url}/`);
+        // })
+        
+        let newCode = '';
+        if(!isProd) {
+            // 开发环境下
+            // 替换路径为带域名的路径，如：
+            // '/vite/node_modules/.vite/vue.js'替换为'http://127.0.0.1:1004/vite/node_modules/.vite/vue.js'
+            // 保证module能准确引入
+            const name = app.name;
+            // eslint-disable-next-line
+            const reg = new RegExp(`(from|import)(\\s*['"])(\/${name}\/)`, 'g');
+            newCode = code.replace(reg, all => {
+                return all.replace(`/${name}/`, `${app.url}/`);
+            })
+        } else {
+            // 生产环境下
+            // 替换相对路径为绝对路径，如：'./vendor.7217b224.js'替换为'http://127.0.0.1:1004/vite/vendor.7217b224.js'
+            // 保证module能准确引入
+            // 这里需要保证vite.config.js的build.assetsDir必须为assets
+            newCode = code.replace(/(from|import\()(\s*['"])(\.\.?\/)/g, (all, $1, $2, $3) => {
+                return all.replace($3, `${app.url}/assets/`);
+            });
+        }
+        const blob = new Blob([newCode], { type: 'text/javascript' });
         scriptElem.src = URL.createObjectURL(blob);
     } else {
         scriptElem.src = href;
@@ -343,28 +376,3 @@ export function createScriptElement(app, {href, type, code, isModule}) {
     scriptElem.type = type;
     app.el.appendChild(scriptElem);
 }
-
-// function runCode2InlineScript (
-//     url: string,
-//     code: string,
-//     module: boolean,
-//     scriptElement: HTMLScriptElement,
-//     callback?: moduleCallBack,
-// ): void {
-//     if (module) {
-//         // module script is async, transform it to a blob for subsequent operations
-//         const blob = new Blob([code], { type: 'text/javascript' })
-//         scriptElement.src = URL.createObjectURL(blob)
-//         scriptElement.setAttribute('type', 'module')
-//         if (callback) {
-//             callback.moduleCount && callback.moduleCount--
-//             scriptElement.onload = callback.bind(scriptElement, callback.moduleCount === 0)
-//         }
-//     } else {
-//         scriptElement.textContent = code
-//     }
-//
-//     if (!url.startsWith('inline-')) {
-//         scriptElement.setAttribute('data-origin-src', url)
-//     }
-// }
