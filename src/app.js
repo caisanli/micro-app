@@ -96,7 +96,8 @@ class ZMicroApp {
      * 得到css、JavaScript的内联、远程代码放入links、scripts中
      */
     parseEntry() {
-        fetchResource(this.url).then(html => {
+        const url = `${this.url}?id=${Date.now()}`;
+        fetchResource(url).then(html => {
             this.container = parseHtml(html, this);
             this.insertHtml();
         }).catch((err) => {
