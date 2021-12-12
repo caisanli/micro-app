@@ -48,4 +48,4 @@ class Sandbox {
   }
 }
 
-export default Sandbox
+export default Sandbox;

@@ -4,19 +4,21 @@
 class DiffSandbox {
   constructor() {
     this.active = false;
-    this.modifyMap = {} // 存放修改的属性
-    this.windowSnapshot = {} // windows的快照
+    this.modifyMap = {}; // 存放修改的属性
+    this.windowSnapshot = {}; // windows的快照
     // this.proxyWindow = window;
   }
   start() {
     if(this.active) {
-        return ;
+      return ;
     }
     this.active = true;
     // 缓存window对象上的属性
-    this.windowSnapshot = {}
+    this.windowSnapshot = {};
     for (const item in window) {
-      this.windowSnapshot[item] = window[item]
+      if(Object.prototype.hasOwnProperty.call(window.item)) {
+        this.windowSnapshot[item] = window[item];
+      }
     }
     // Object.keys(this.modifyMap).forEach((p) => {
     //   window[p] = this.modifyMap[p]
@@ -24,7 +26,7 @@ class DiffSandbox {
   }
   stop() {
     if(!this.active) {
-        return ;
+      return ;
     }
     this.active = false;
     // 还原window的属性
@@ -34,7 +36,7 @@ class DiffSandbox {
         // this.modifyMap[item] = window[item]
         // 还原window
         if(item === '0') continue;
-        window[item] = this.windowSnapshot[item]
+        window[item] = this.windowSnapshot[item];
       }
     }
   }
