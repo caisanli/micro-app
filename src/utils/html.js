@@ -1,7 +1,7 @@
 /**
  * 处理入口文件的一些方法
  */
-
+/* eslint-disable */ 
 import { getUrlOrigin, fetchResource } from './index';
 
 // 是否是生产环境
@@ -203,7 +203,8 @@ function parseLink(parentNode, node, app) {
 
   const newHref = getAbsoluteHref(href, app.origin);
   if(href && rel === 'stylesheet') { // 外部链接
-    if(disableStyleSandbox !== true) {
+    // 如果没禁用样式沙箱
+    if(disableStyleSandbox !== true) { 
       app.links.push({
         href: newHref,
         code: ''
@@ -211,6 +212,8 @@ function parseLink(parentNode, node, app) {
       const comment = document.createComment(`<link href="${newHref}" rel="stylesheet" />`);
       parentNode.insertBefore(comment, node);
       parentNode.removeChild(node);
+    } else {
+      node.setAttribute('href', newHref);
     }
   } else if (!as && rel === 'prefetch') { // 处理空闲时间加载的资源
     // ...
