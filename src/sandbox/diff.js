@@ -16,7 +16,7 @@ class DiffSandbox {
     // 缓存window对象上的属性
     this.windowSnapshot = {};
     for (const item in window) {
-      if(Object.prototype.hasOwnProperty.call(window.item)) {
+      if(Object.prototype.hasOwnProperty.call(window, window.item)) {
         this.windowSnapshot[item] = window[item];
       }
     }
