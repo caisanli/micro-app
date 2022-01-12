@@ -1,4 +1,4 @@
-
+/* eslint-disable */ 
 import { fetchResource, getUrlOrigin, getUrl } from './utils';
 import { parseHtml, scopedCssStyle, createScriptElement } from './utils/html';
 import Sandbox from './sandbox/index.js';
@@ -96,7 +96,7 @@ class ZMicroApp {
      * 得到css、JavaScript的内联、远程代码放入links、scripts中
      */
   parseEntry() {
-    const url = `${this.url}?id=${Date.now()}`;
+    const url = this.url +'?now=' + Date.now(); // `${this.url}?id=${Date.now()}`;
     fetchResource(url).then(html => {
       this.container = parseHtml(html, this);
       this.insertHtml();
