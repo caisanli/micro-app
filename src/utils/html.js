@@ -115,7 +115,6 @@ function setLocalCssScoped(css, app) {
  * @param {*} app
  */
 function recursionGetSource(element, app) {
-  const { disableStyleSandbox } = app.option;
   [...element.childNodes].forEach(child => {
     const nodeName = child.nodeName;
     switch(nodeName) {
@@ -123,9 +122,7 @@ function recursionGetSource(element, app) {
     case 'TITLE':
       break;
     case 'STYLE': {
-      if(disableStyleSandbox !== true) {
-        parseStyle(element, child, app);
-      }
+      parseStyle(element, child, app);
       break;
     }
     case 'LINK':
@@ -192,7 +189,7 @@ function parseScript(parentNode, node, app) {
  * @param {*} app 应用实例
  */
 function parseLink(parentNode, node, app) {
-  const { disableStyleSandbox, externalLinks } = app.option;
+  const { externalLinks } = app.option;
   const rel = node.getAttribute('rel');
   const href = node.getAttribute('href');
   const as = node.getAttribute('as');
@@ -203,18 +200,13 @@ function parseLink(parentNode, node, app) {
 
   const newHref = getAbsoluteHref(href, app.origin);
   if(href && rel === 'stylesheet') { // 外部链接
-    // 如果没禁用样式沙箱
-    if(disableStyleSandbox !== true) { 
-      app.links.push({
-        href: newHref,
-        code: ''
-      });
-      const comment = document.createComment(`<link href="${newHref}" rel="stylesheet" />`);
-      parentNode.insertBefore(comment, node);
-      parentNode.removeChild(node);
-    } else {
-      node.setAttribute('href', newHref);
-    }
+    app.links.push({
+      href: newHref,
+      code: ''
+    });
+    const comment = document.createComment(`<link href="${newHref}" rel="stylesheet" />`);
+    parentNode.insertBefore(comment, node);
+    parentNode.removeChild(node);
   } else if (!as && rel === 'prefetch') { // 处理空闲时间加载的资源
     // ...
   } else { // 其他
@@ -253,6 +245,7 @@ export function scopedCssStyle(node, app) {
 function parseCssRules(cssRules, styleList, app) {
   const name = app.name;
   const scopedName = app.scopedName;
+  const { disableStyleSandbox } = app.option;
   Array.from(cssRules).forEach(rule => {
     const type = rule.type;
     if(type === 4) { // @media 媒体查询
@@ -301,14 +294,15 @@ function parseCssRules(cssRules, styleList, app) {
           cssText = cssText.replace(backgroundImage, newBackgroundImage);
         }
       }
-
-      selectorText.split(',').forEach(select => {
-        select = select.trim();
-        // body、html选择器不设置作用域
-        if(!select.startsWith('body') && !select.startsWith('html') && !select.startsWith('@font-face')) {
-          cssText = cssText.replace(select, `[name="${ scopedName }"] ${select}`);
-        }
-      });
+      if (disableStyleSandbox !== true) {
+        selectorText.split(',').forEach(select => {
+          select = select.trim();
+          // body、html选择器不设置作用域
+          if(!select.startsWith('body') && !select.startsWith('html') && !select.startsWith('@font-face')) {
+            cssText = cssText.replace(select, `[name="${ scopedName }"] ${select}`);
+          }
+        });
+      }
       styleList.push(cssText);
     }
   });
