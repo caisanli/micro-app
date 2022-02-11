@@ -259,14 +259,19 @@ function parseCssRules(cssRules, styleList, app) {
       try {
         // 处理src相对路径
         let cssText = rule.cssText || '';
-        if(rule.style && rule.style.src) {
-          let src = rule.style.src;
-          if(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/.test(src)) {
-            let newSrc = src.replace(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/g, (str, url, prefix) => {
-              return `url("${url.replace(prefix, `/${name}/`)}")`;
-            });
-            cssText = cssText.replace(src, newSrc);
-          }
+        // if(rule.style && rule.style.src) {
+        //   let src = rule.style.src;
+        //   if(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/.test(src)) {
+        //     let newSrc = src.replace(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/g, (str, url, prefix) => {
+        //       return `url("${url.replace(prefix, `/${name}/`)}")`;
+        //     });
+        //     cssText = cssText.replace(src, newSrc);
+        //   }
+        // } 
+        if(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/.test(cssText)) {
+          cssText = cssText.replace(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/g, (str, url, prefix) => {
+            return `url("${url.replace(prefix, `/${name}/`)}")`;
+          });
         }
         styleList.push(cssText);
       } catch (error) {
