@@ -1,6 +1,6 @@
 {
-  "name": "zxj-micro",
-  "version": "1.0.9",
+  "name": "@zxj/micro",
+  "version": "1.0.0",
   "description": "",
   "main": "./lib/index.js",
   "scripts": {
@@ -19,7 +19,7 @@
   "author": "",
   "license": "ISC",
   "publishConfig": {
-    "registry": "http://192.168.5.16:8081/repository/npm-hosted/"
+    "registry": "http://192.168.5.16:4873/"
   },
   "bugs": {
     "url": "https://github.com/CaisanLi/zxj-micro/issues"
