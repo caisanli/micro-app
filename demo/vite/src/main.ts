@@ -1,12 +1,14 @@
 import { createApp, App as VueApp } from 'vue';
 import App from './App.vue';
 import router from './router';
+import { createPinia } from 'pinia';
 
 const microEffect: MicroSideEffect | undefined = window['_zxj_micro_vite'];
 
 function createVueApp(): VueApp {
   const app:VueApp = createApp(App);
   app.use(router);
+  app.use(createPinia())
   app.mount('#vite');
   return app;
 }

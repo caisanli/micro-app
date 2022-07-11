@@ -1,6 +1,6 @@
+import useStore from '@/store/permission';
 import { createRouter, createWebHashHistory } from 'vue-router';
 import BlankLayout from '@/components/BlankLayout.vue';
-
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [{
@@ -19,5 +19,15 @@ const router = createRouter({
     }]
   }]
 });
+
+router.beforeEach((to, from, next) => { 
+  console.log("beforeEach", to)
+  const store = useStore()
+  console.log('store：', store.isRequest)
+  if (!store.isRequest) {
+    store.setRequest(true)
+  }
+  next()
+})
 
 export default router;

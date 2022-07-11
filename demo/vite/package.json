@@ -7,8 +7,9 @@
     "serve": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.2.16",
-    "vue-router": "^4.0.12"
+    "pinia": "^2.0.14",
+    "vue": "^3.2.37",
+    "vue-router": "^4.1.1"
   },
   "devDependencies": {
     "@vitejs/plugin-legacy": "^1.6.3",

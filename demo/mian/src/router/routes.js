@@ -18,4 +18,8 @@ export default [{
   name: 'vite',
   path: '/vite/*',
   component: () => import('@/views/vite')
+}, {
+  name: 'vite2',
+  path: '/vite2/*',
+  component: () => import('@/views/vite2')
 }]
