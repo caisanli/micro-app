@@ -90,3 +90,13 @@ export const cancelIdleCallback =
     window.cancelIdleCallback || function(id) {
       clearTimeout(id);
     };
+
+/**
+ * 是否支持 script module
+ * @returns {boolean}
+ */
+export function isSupportMoudule () {
+  const script = document.createElement('script');
+  script.setAttribute('nomodule', null);
+  return script.noModule !== undefined;
+}
