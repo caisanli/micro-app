@@ -2,7 +2,7 @@
  * 处理入口文件的一些方法
  */
 /* eslint-disable */ 
-import { getUrlOrigin, fetchResource } from './index';
+import { getUrlOrigin, fetchResource, isSupportMoudule } from './index';
 
 // 是否是生产环境
 export const isProd = process.env.NODE_ENV !== 'development';
@@ -56,7 +56,7 @@ function getScript(app) {
     if(item.href) {
       list.push(getRemoteScript(item));
     } else {
-      list.push({code: item.code, type: item.type, isModule: item.isModule});
+      list.push(item);
     }
   });
   Promise.all(list).then(codes => {
@@ -71,13 +71,7 @@ function getScript(app) {
  * @returns
  */
 function getRemoteScript(item) {
-  const obj = {
-    isExternal: item.isExternal,
-    isModule: item.isModule,
-    code: '',
-    href: item.href,
-    type: item.type
-  };
+  const obj = Object.assign({}, item);
   if(item.isExternal) {
     return Promise.resolve(obj);
   }
@@ -145,40 +139,49 @@ function recursionGetSource(element, app) {
  */
 function parseScript(parentNode, node, app) {
   const src = node.getAttribute('src');
-  const type = node.getAttribute('type') || 'text/javascript';
+  const type = node.getAttribute('type');
   const isModule = type === 'module'; // 是否是module
-  const isNomodule = node.hasAttribute('nomodule');
-  if(isNomodule) {
+  const isNoModule = node.hasAttribute('nomodule');
+  const supportModule = isSupportMoudule();
+  const id = node.getAttribute('id');
+  const dataSrc = node.getAttribute('data-src');
+  // 如果 nomodule 属性存在且浏览器支持 script module，则不处理
+  if(isNoModule && supportModule) {
     return ;
   }
+  // 如果是script module
   if(isModule) {
+    // 并且浏览器不支持，则不处理
+    if (!supportModule) {
+      return
+    }
     app.moduleCount++;
+  }
+  const scriptItem = {
+    type,
+    isModule,
+    isNoModule,
+    isExternal: false,
+    code: '',
+    href: '',
+    id,
+    dataSrc
   }
   if(src) { // 远程脚本
     // 是否是外部链接，外部链接就不做处理
     const { externalLinks } = app.option;
     const isExternal = externalLinks.includes(src);
     const newSrc = getAbsoluteHref(src, app.origin);
-    app.scripts.push({
-      href: newSrc,
-      code: '',
-      type,
-      isModule,
-      isExternal
-    });
+    scriptItem.isExternal = isExternal;
+    scriptItem.href = isNoModule ? src : newSrc;
     const comment = document.createComment(`<script src="${newSrc}" />`);
     parentNode.insertBefore(comment, node);
     parentNode.removeChild(node);
   } else { // 内联脚本
-    app.scripts.push({
-      href: '',
-      code: node.textContent,
-      type,
-      isModule,
-      isExternal: false
-    });
+    scriptItem.code = node.textContent;
     parentNode.removeChild(node);
   }
+  app.scripts.push(scriptItem);
 }
 
 /**
@@ -325,12 +328,13 @@ function getAbsoluteHref(href, origin) {
 
 /**
  * 创建script标签
- * @param {*} href
- * @param {*} isModule
+ * @param {*} app
+ * @param {*} item
  */
-export function createScriptElement(app, {href, type, code, isModule}) {
+export function createScriptElement(app, item) {
+  const { href, type, code, isModule, isNoModule, id, dataSrc } = item;
   const scriptElem = document.createElement('script');
-  if(isModule) {
+  if (isModule) {
     // 监听module加载完成
     scriptElem.addEventListener('load', () => {
       if(--app.moduleCount <= 0) {
@@ -350,7 +354,7 @@ export function createScriptElement(app, {href, type, code, isModule}) {
     // })
         
     let newCode = '';
-    if(!isProd) {
+    if (!isProd) {
       // 开发环境下
       // 替换路径为带域名的路径，如：
       // '/vite/node_modules/.vite/vue.js'替换为'http://127.0.0.1:1004/vite/node_modules/.vite/vue.js'
@@ -372,9 +376,27 @@ export function createScriptElement(app, {href, type, code, isModule}) {
     }
     const blob = new Blob([newCode], { type: 'text/javascript' });
     scriptElem.src = URL.createObjectURL(blob);
+  } else if (isNoModule) {
+    scriptElem.setAttribute('data-nomodule', 'true');
+    if (href) {
+      scriptElem.src = href;
+    }
+    if (code) {
+      const blob = new Blob([code], { type: 'text/javascript' });
+      scriptElem.src = URL.createObjectURL(blob);
+    }
   } else {
     scriptElem.src = href;
   }
-  scriptElem.type = type;
+  if (id) {
+    scriptElem.id = id;
+  }
+  if (dataSrc) {
+    scriptElem.setAttribute('data-src', dataSrc);
+  }
+  if (type) {
+    scriptElem.type = type;
+  }
+  scriptElem.async = false
   app.el.appendChild(scriptElem);
 }

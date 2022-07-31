@@ -212,7 +212,8 @@ class ZMicroApp {
   execScript(scriptCodes) {
     try {
       scriptCodes.forEach(item => {
-        if(item.isExternal || item.isModule) { // 是远程链接
+        // 是远程链接、module、nomodule代码
+        if (item.isExternal || item.isModule || item.isNoModule) {
           createScriptElement(this, item);
           return ;
         }
@@ -230,7 +231,7 @@ class ZMicroApp {
      * 执行module加载完成事件
      */
   execModuleMount() {
-    this.sandbox.sideEffect.evt.dispatch('module-mount');
+    this.emitMount();
     this.moduleCount = this.cacheModuleCount;
   }
   /**
@@ -290,7 +291,7 @@ class ZMicroApp {
         // 执行script代码
         this.execScript(this.scriptCodes);
         // 触发mount事件
-        this.sandbox.sideEffect.evt.dispatch('mount');
+        this.emitMount();
         // 监听head
         this.observerHeadFn();
         // 监听body
@@ -299,6 +300,17 @@ class ZMicroApp {
         console.log(error);
       }
     }, 0);
+  }
+
+  /**
+   * 触发mount事件
+   */
+  emitMount() {
+    // 如果module未加载完毕，则不触发mount事件
+    if (this.moduleCount > 0) {
+      return ;
+    }
+    this.sandbox.sideEffect.evt.dispatch('module-mount');
   }
   /**
      * 取消挂载
