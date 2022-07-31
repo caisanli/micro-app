@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "ant-design-vue": "^1.7.8",
-    "core-js": "^3.6.5",
+    "core-js": "^3.24.1",
     "vue": "^2.6.11",
     "vue-router": "^3.5.3"
   },
@@ -39,6 +39,6 @@
   "browserslist": [
     "> 1%",
     "last 2 versions",
-    "not dead"
+    "ie 11"
   ]
 }

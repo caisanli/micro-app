@@ -1,4 +1,5 @@
 module.exports = {
+    transpileDependencies: ['vue', 'vue-router'],
     devServer: {
         headers: {
             "Access-Control-Allow-Origin": "*"

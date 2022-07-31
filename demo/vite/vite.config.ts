@@ -1,7 +1,7 @@
 import { defineConfig, PluginOption } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import legacy from '@vitejs/plugin-legacy'
-import { join } from 'path';
+import { resolve, join } from 'path';
 import { writeFileSync } from 'fs';
 const zxjMicroPlugin = function():PluginOption {
   let basePath = '';
@@ -18,9 +18,13 @@ const zxjMicroPlugin = function():PluginOption {
         if (Object.prototype.hasOwnProperty.call(bundle, chunkName)) {
           const chunk = bundle[chunkName]
           if (chunk.fileName && chunk.fileName.lastIndexOf('.js') > -1) {
+            // console.log(chunk)
+            const ORIGIN = 'http://0.0.0.0'
             // @ts-ignore
             chunk.code = chunk.code.replace(/(from|import\()(\s*['"])(\.\.?\/)/g, (all, $1, $2, $3) => {
-              return all.replace($3, new URL($3, basePath))
+              const fullPath = new URL($3, ORIGIN + basePath)
+              const newPath = fullPath.href.replace(ORIGIN, '')
+              return all.replace($3, newPath)
             })
             const fullPath = join(options.dir, chunk.fileName)
             // @ts-ignore
@@ -32,19 +36,27 @@ const zxjMicroPlugin = function():PluginOption {
   }
 }
 
+function _resolve(src: string) {
+  return resolve(__dirname, src);
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   base: '/vite/',
   resolve: {
-    alias: {
-      '@': '/src'
-    },
+    alias: [
+      // 设置别名
+      { find: '@', replacement: _resolve('src') },
+    ]
+  },
+  server: {
+    host: '0.0.0.0'
   },
   plugins: [
     vue(),
-    zxjMicroPlugin(),
+    // zxjMicroPlugin(),
     legacy({
-      targets: ['ie >= 11'],
+      targets: ['ie >= 10'],
       additionalLegacyPolyfills: ['regenerator-runtime/runtime']
     })
   ]
