@@ -104,3 +104,9 @@ lib
 
 # TernJS port file
 .tern-port
+
+# .idea directory
+.idea
+
+#
+public
