@@ -17,15 +17,10 @@ const isMicro:boolean = window['_zxj_is_micro'] || false;
 
 if (isMicro && microEffect) {
   let app:VueApp;
-  
-  // 当所有module都加载完后
-  microEffect.evt.on('module-mount', () => {
-    console.log('module-mount');
-    app = createVueApp();
-  });
-  // 因为当触发mount事件时，module还没加载完成
+  console.log('micro vite ...');
+  // 因为当触发mount事件时
   microEffect.evt.on('mount', () => {
-    console.log('mount');
+    app = createVueApp();
   });
   // 卸载
   microEffect.evt.on('unmount', () => {
