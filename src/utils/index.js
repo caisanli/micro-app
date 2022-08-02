@@ -3,7 +3,7 @@
  */
 /**
  * 拉取资源
- * @param url 
+ * @param url
  */
 export function fetchResource (url) {
   return ajax({url}).then(res => res);
@@ -11,8 +11,8 @@ export function fetchResource (url) {
 
 /**
  * ajax
- * @param {*} opt 
- * @returns 
+ * @param {*} opt
+ * @returns
  */
 export function ajax(opt = {}) {
   return new Promise((resolve, reject) => {
@@ -36,8 +36,8 @@ export function ajax(opt = {}) {
 
 /**
  * 获取URL中的Origin地址
- * @param {*} url 
- * @returns 
+ * @param {*} url
+ * @returns
  */
 export function getUrlOrigin(url) {
   const reg = /(^www\.[^/]+[\da-zA-Z])|(^http[s]?:\/\/[^/]+)/;
@@ -49,7 +49,7 @@ export function getUrlOrigin(url) {
 
 /**
  * 是否是绝对路径
- * @param {*} url 
+ * @param {*} url
  */
 export function isAbsolutePath(url) {
   const reg = /(^www\.)|(^http[s]?:\/\/)/;
@@ -58,7 +58,7 @@ export function isAbsolutePath(url) {
 
 /**
  * 获取URL
- * @param {*} url 
+ * @param {*} url
  */
 export function getUrl(url) {
   const reg = /(^www\.[^/]+[\da-zA-Z])|(^http[s]?:\/\/[^/]+[\d]+)/;
@@ -99,4 +99,13 @@ export function isSupportMoudule () {
   const script = document.createElement('script');
   script.setAttribute('nomodule', null);
   return script.noModule !== undefined;
+}
+
+/**
+ * 是否是异步加载的script
+ * @param item
+ * @returns {*|boolean}
+ */
+export function isAsyncScript (item) {
+  return item.isExternal || item.isModule || item.isNoModule;
 }

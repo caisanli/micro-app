@@ -26,10 +26,14 @@ export default {
     externalLinks: { // externalLinks 外部链接不处理
       type: Array,
       default: () => []
+    },
+    module: { // 是否支持 module
+      type: Boolean,
+      default: false
     }
   },
   mounted() {
-    const { name, url, disableStyleSandbox, externalLinks } = this;
+    const { name, url, disableStyleSandbox, externalLinks, module } = this;
     if(!name || !url) return ;
     // 从缓存中取子系统实例
     let app = cache[name];
@@ -39,7 +43,7 @@ export default {
     } else { // 不存在实例，就初始化
       this.app = new MicroApp();
       cache[name] = this.app;
-      this.app.init(name, url, { disableStyleSandbox, externalLinks });
+      this.app.init(name, url, { disableStyleSandbox, externalLinks, module });
     }
   },
   beforeDestroy() {

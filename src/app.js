@@ -1,5 +1,5 @@
-/* eslint-disable */ 
-import { fetchResource, getUrlOrigin, getUrl } from './utils';
+/* eslint-disable */
+import {fetchResource, getUrlOrigin, getUrl, isAsyncScript} from './utils';
 import { parseHtml, scopedCssStyle, createScriptElement } from './utils/html';
 import Sandbox from './sandbox/index.js';
 import _JsMutationObserver from './utils/MutationObserver';
@@ -111,7 +111,6 @@ class ZMicroApp {
      */
   loadCode() {
     if(++this.fetchCount >= 2) {
-      // if(this)
       this.hasModule = this.moduleCount > 0;
       this.cacheModuleCount = this.moduleCount;
       this.mount();
@@ -134,11 +133,13 @@ class ZMicroApp {
     this.execStyle(this.prefetchStyles);
     this.execScript(this.prefetchScripts);
   }
+
   /**
-     * 初始化
-     * @param {*} name 唯一值
-     * @param {*} url 入口文件
-     */
+   * 初始化
+   * @param name
+   * @param url
+   * @param option
+   */
   init(name, url, option) {
     const defaultOpt = {
       disableStyleSandbox: true,
@@ -172,6 +173,8 @@ class ZMicroApp {
     this.observerBody = null;
     // 预加载资源类型请求次数
     this.prefetchCount = 0;
+    // 是否支持module
+    this.module = option.module;
     // 是否有module
     this.hasModule = false;
     // 记录module的数量
@@ -184,6 +187,8 @@ class ZMicroApp {
     this.prefetchStyles = [];
     // 预加载资源
     this.prefetchSource = [];
+    // 缓存blob地址
+    this.blobUrls = [];
     // 沙箱
     this.sandbox = new Sandbox(name);
     // 处理入口文件
@@ -213,7 +218,7 @@ class ZMicroApp {
     try {
       scriptCodes.forEach(item => {
         // 是远程链接、module、nomodule代码
-        if (item.isExternal || item.isModule || item.isNoModule) {
+        if (isAsyncScript(item)) {
           createScriptElement(this, item);
           return ;
         }
@@ -277,7 +282,6 @@ class ZMicroApp {
     const prevStatusIsInit = this.status === 'init';
     this.status = 'mount';
     window['_zxj_is_micro'] = true;
-
     if(!prevStatusIsInit) {
       this.insertHtml();
     }
@@ -310,7 +314,31 @@ class ZMicroApp {
     if (this.moduleCount > 0) {
       return ;
     }
-    this.sandbox.sideEffect.evt.dispatch('module-mount');
+    // 最大检测次数
+    let maxCheckCount = 50;
+    const checkMount = () => {
+      const timer = setTimeout(() => {
+        const mount = this.sandbox.sideEffect.evtListenerTypes['mount']
+        if (mount) {
+          clearTimeout(timer)
+          this.sandbox.sideEffect.evt.dispatch('mount');
+        } else if(--maxCheckCount <= 0) {
+          clearTimeout(timer)
+          console.log('未检测到mount事件绑定，请检查是否有问题');
+        } else {
+          checkMount()
+        }
+      }, 10)
+    }
+    // 检测是否绑定了mount事件
+    checkMount();
+  }
+
+  /**
+   * 清空生成的blob url
+   */
+  clearBlobUrls() {
+    this.blobUrls.forEach(URL.revokeObjectURL);
   }
   /**
      * 取消挂载
@@ -326,6 +354,8 @@ class ZMicroApp {
     this.clearNodes();
     // 触发unmount事件
     this.sandbox.sideEffect.evt.dispatch('unmount');
+    // 清空blob url
+    this.clearBlobUrls();
     // 停止沙箱
     this.sandbox.stop();
     // 取消监听head元素

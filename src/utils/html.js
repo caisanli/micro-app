@@ -1,8 +1,8 @@
 /**
  * 处理入口文件的一些方法
  */
-/* eslint-disable */ 
-import { getUrlOrigin, fetchResource, isSupportMoudule } from './index';
+/* eslint-disable */
+import {getUrlOrigin, fetchResource, isSupportMoudule, isAsyncScript} from './index';
 
 // 是否是生产环境
 export const isProd = process.env.NODE_ENV !== 'development';
@@ -142,20 +142,21 @@ function parseScript(parentNode, node, app) {
   const type = node.getAttribute('type');
   const isModule = type === 'module'; // 是否是module
   const isNoModule = node.hasAttribute('nomodule');
-  const supportModule = isSupportMoudule();
+  const supportModule = app.module && isSupportMoudule();
   const id = node.getAttribute('id');
   const dataSrc = node.getAttribute('data-src');
   // 如果 nomodule 属性存在且浏览器支持 script module，则不处理
   if(isNoModule && supportModule) {
+    parentNode.removeChild(node);
     return ;
   }
   // 如果是script module
   if(isModule) {
     // 并且浏览器不支持，则不处理
     if (!supportModule) {
+      parentNode.removeChild(node);
       return
     }
-    app.moduleCount++;
   }
   const scriptItem = {
     type,
@@ -181,6 +182,11 @@ function parseScript(parentNode, node, app) {
     scriptItem.code = node.textContent;
     parentNode.removeChild(node);
   }
+
+  if (isAsyncScript(scriptItem)) {
+    app.moduleCount++
+  }
+
   app.scripts.push(scriptItem);
 }
 
@@ -270,7 +276,7 @@ function parseCssRules(cssRules, styleList, app) {
         //     });
         //     cssText = cssText.replace(src, newSrc);
         //   }
-        // } 
+        // }
         if(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/.test(cssText)) {
           cssText = cssText.replace(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/g, (str, url, prefix) => {
             return `url("${url.replace(prefix, `/${name}/`)}")`;
@@ -335,25 +341,7 @@ export function createScriptElement(app, item) {
   const { href, type, code, isModule, isNoModule, id, dataSrc } = item;
   const scriptElem = document.createElement('script');
   if (isModule) {
-    // 监听module加载完成
-    scriptElem.addEventListener('load', () => {
-      if(--app.moduleCount <= 0) {
-        app.execModuleMount();
-      }
-    });
-    // 这里 basename 需要和子应用vite.config.js中base的配置保持一致
-    // const name = app.name;
-    // // eslint-disable-next-line
-    // const firstReg = new RegExp(`(from|import)(\\s*['"])(\/${name}\/)`, 'g');
-    // // eslint-disable-next-line
-    // const nextRef = new RegExp(`[\\W]import\\(["']/${name}\/`, 'g');
-    // const newCode = code.replace(firstReg, all => {
-    //     return all.replace(`/${name}/`, `${app.url}/`);
-    // }).replace(nextRef, all => {
-    //     return all.replace(`/${name}/`, `${app.url}/`);
-    // })
-        
-    let newCode = '';
+    let newCode;
     if (!isProd) {
       // 开发环境下
       // 替换路径为带域名的路径，如：
@@ -375,7 +363,9 @@ export function createScriptElement(app, item) {
       });
     }
     const blob = new Blob([newCode], { type: 'text/javascript' });
-    scriptElem.src = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
+    scriptElem.src = url;
+    app.blobUrls.push(url);
   } else if (isNoModule) {
     scriptElem.setAttribute('data-nomodule', 'true');
     if (href) {
@@ -383,7 +373,9 @@ export function createScriptElement(app, item) {
     }
     if (code) {
       const blob = new Blob([code], { type: 'text/javascript' });
-      scriptElem.src = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
+      scriptElem.src = url;
+      app.blobUrls.push(url);
     }
   } else {
     scriptElem.src = href;
@@ -398,5 +390,18 @@ export function createScriptElement(app, item) {
     scriptElem.type = type;
   }
   scriptElem.async = false
+  // 监听script加载完成
+  scriptElem.addEventListener('load', () => {
+    if(--app.moduleCount <= 0) {
+      app.execModuleMount();
+    }
+  })
+  // 加载失败也算成功
+  scriptElem.addEventListener('error', (error) => {
+    console.log(error)
+    if(--app.moduleCount <= 0) {
+        app.execModuleMount();
+    }
+  })
   app.el.appendChild(scriptElem);
 }
