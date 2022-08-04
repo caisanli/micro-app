@@ -1,6 +1,6 @@
 /* eslint-disable */
 import {fetchResource, getUrlOrigin, getUrl, isAsyncScript} from './utils';
-import { parseHtml, scopedCssStyle, createScriptElement } from './utils/html';
+import { parseHtml, scopedCssStyle, createScriptElement, isProd } from './utils/html';
 import Sandbox from './sandbox/index.js';
 import _JsMutationObserver from './utils/MutationObserver';
 class ZMicroApp {
@@ -96,7 +96,7 @@ class ZMicroApp {
      * 得到css、JavaScript的内联、远程代码放入links、scripts中
      */
   parseEntry() {
-    const url = this.url +'?now=' + Date.now(); // `${this.url}?id=${Date.now()}`;
+    const url = this.url+ (isProd ? '?now=' + Date.now() : '');
     fetchResource(url).then(html => {
       this.container = parseHtml(html, this);
       this.insertHtml();
@@ -174,7 +174,7 @@ class ZMicroApp {
     // 预加载资源类型请求次数
     this.prefetchCount = 0;
     // 是否支持module
-    this.module = option.module;
+    this.module = !isProd;
     // 是否有module
     this.hasModule = false;
     // 记录module的数量
