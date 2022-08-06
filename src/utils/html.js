@@ -239,8 +239,8 @@ function parseStyle(parentNode, node, app) {
 
 /**
  * 设置样式作用域
- * @param {*} node 当前link节点
- * @param {*} name 作用域前缀
+ * @param node style节点
+ * @param app 应用实例
  */
 export function scopedCssStyle(node, app) {
   const cssRules = node.sheet.cssRules;
@@ -251,9 +251,9 @@ export function scopedCssStyle(node, app) {
 
 /**
  * 解析样式规则并添加作用域前缀
- * @param {*} cssRules
- * @param {*} styleList
- * @param {*} name
+ * @param {*} cssRules 样式规则
+ * @param {*} styleList 存储样式列表
+ * @param {*} app 应用实例
  */
 function parseCssRules(cssRules, styleList, app) {
   const name = app.name;
