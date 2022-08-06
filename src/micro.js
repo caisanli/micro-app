@@ -42,6 +42,11 @@ export default {
       this.app.init(name, url, { disableStyleSandbox, externalLinks });
     }
   },
+  // 兼容vue3
+  beforeUnmount() {
+    // 取消挂载
+    this.app.unmount();
+  },
   beforeDestroy() {
     // 取消挂载
     this.app.unmount();
