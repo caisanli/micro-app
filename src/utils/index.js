@@ -109,3 +109,12 @@ export function isSupportMoudule () {
 export function isAsyncScript (item) {
   return item.isExternal || item.isModule || item.isNoModule;
 }
+
+/**
+ * 是否是vite的legacy模式的入口文件
+ * @param item
+ * @returns {*}
+ */
+export function isViteLegacyEntry (item) {
+  return item.id && item.id.includes('vite') && item.dataSrc;
+}

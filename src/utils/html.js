@@ -2,7 +2,7 @@
  * 处理入口文件的一些方法
  */
 /* eslint-disable */
-import {getUrlOrigin, fetchResource, isSupportMoudule, isAsyncScript} from './index';
+import {getUrlOrigin, fetchResource, isSupportMoudule, isAsyncScript, isViteLegacyEntry} from './index';
 
 // 是否是生产环境
 export const isProd = process.env.NODE_ENV !== 'development';
@@ -147,6 +147,8 @@ function parseScript(parentNode, node, app) {
   const dataSrc = node.getAttribute('data-src');
   // 如果 nomodule 属性存在且浏览器支持 script module，则不处理
   if(isNoModule && supportModule) {
+    const comment = document.createComment(`当前子应用不需要支持 nomodule <script src="${src}" />${node.textContent}</script>`);
+    parentNode.insertBefore(comment, node);
     parentNode.removeChild(node);
     return ;
   }
@@ -154,6 +156,8 @@ function parseScript(parentNode, node, app) {
   if(isModule) {
     // 并且浏览器不支持，则不处理
     if (!supportModule) {
+      const comment = document.createComment(`当前子应用不支持 module <script src="${src}" />${node.textContent}</script>`);
+      parentNode.insertBefore(comment, node);
       parentNode.removeChild(node);
       return
     }
@@ -334,10 +338,11 @@ function getAbsoluteHref(href, origin) {
 
 /**
  * 创建script标签
- * @param {*} app
- * @param {*} item
+ * @param app
+ * @param item
+ * @param next 资源加载完毕的回调函数
  */
-export function createScriptElement(app, item) {
+export function createScriptElement(app, item, next) {
   const { href, type, code, isModule, isNoModule, id, dataSrc } = item;
   const scriptElem = document.createElement('script');
   if (isModule) {
@@ -366,7 +371,7 @@ export function createScriptElement(app, item) {
     const url = URL.createObjectURL(blob);
     scriptElem.src = url;
     app.blobUrls.push(url);
-  } else if (isNoModule) {
+  } else if (isNoModule && !isViteLegacyEntry(item)) {
     scriptElem.setAttribute('data-nomodule', 'true');
     if (href) {
       scriptElem.src = href;
@@ -377,7 +382,7 @@ export function createScriptElement(app, item) {
       scriptElem.src = url;
       app.blobUrls.push(url);
     }
-  } else {
+  } else if (href) {
     scriptElem.src = href;
   }
   if (id) {
@@ -392,16 +397,21 @@ export function createScriptElement(app, item) {
   scriptElem.async = false
   // 监听script加载完成
   scriptElem.addEventListener('load', () => {
-    if(--app.moduleCount <= 0) {
-      app.execModuleMount();
-    }
+    app.moduleCount--;
+    next();
   })
   // 加载失败也算成功
   scriptElem.addEventListener('error', (error) => {
     console.log(error)
-    if(--app.moduleCount <= 0) {
-        app.execModuleMount();
-    }
+    app.moduleCount--;
+    next();
   })
+
   app.el.appendChild(scriptElem);
+
+  // 空标签的script标签不用等加载完毕
+  if (isViteLegacyEntry(item)) {
+    app.moduleCount--;
+    next();
+  }
 }

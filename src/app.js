@@ -1,5 +1,5 @@
 /* eslint-disable */
-import {fetchResource, getUrlOrigin, getUrl, isAsyncScript} from './utils';
+import {fetchResource, getUrlOrigin, getUrl, isAsyncScript, isViteLegacyEntry} from './utils';
 import { parseHtml, scopedCssStyle, createScriptElement, isProd } from './utils/html';
 import Sandbox from './sandbox/index.js';
 import _JsMutationObserver from './utils/MutationObserver';
@@ -214,30 +214,45 @@ class ZMicroApp {
   /**
      * 执行JavaScript代码
      */
-  execScript(scriptCodes) {
-    try {
-      scriptCodes.forEach(item => {
-        // 是远程链接、module、nomodule代码
-        if (isAsyncScript(item)) {
-          createScriptElement(this, item);
-          return ;
-        }
+  execScript(scriptCodes, callback) {
+    let index = -1;
+    const runScript = () => {
+      index++;
+      const item = scriptCodes[index];
+      if (item === undefined) {
+        typeof callback === 'function' && callback()
+        return ;
+      }
+      // 是远程链接、module、nomodule代码
+      if (isAsyncScript(item)) {
+        createScriptElement(this, item, () => {
+          if (isViteLegacyEntry(item)) {
+            const result = new Function(`return ${item.code}`)();
+            if (result.then) {
+              result.then(() => {
+                runScript();
+              }).catch(() => {
+                runScript();
+              })
+            } else {
+              runScript();
+            }
+          } else {
+            runScript();
+          }
+        });
+      } else {
         const code = this.sandbox.bindScope(item.code);
         /* eslint no-new-func: "off" */
         Function(code)();
-        // (0, eval)(this.sandbox.bindScope(code))
-      });
-    } catch (error) {
-      console.log(error);
+        runScript();
+      }
     }
-  }
-  /**
-     * 当所有module都加载完成后
-     * 执行module加载完成事件
-     */
-  execModuleMount() {
-    this.emitMount();
-    this.moduleCount = this.cacheModuleCount;
+    try {
+        runScript();
+    } catch (e) {
+      console.log(e)
+    }
   }
   /**
     * 清空head标签动态添加的style、script标签
@@ -293,9 +308,10 @@ class ZMicroApp {
         // 执行样式代码
         this.execStyle(this.styleCodes);
         // 执行script代码
-        this.execScript(this.scriptCodes);
-        // 触发mount事件
-        this.emitMount();
+        this.execScript(this.scriptCodes, () => {
+          // 触发mount事件
+          this.emitMount();
+        });
         // 监听head
         this.observerHeadFn();
         // 监听body
@@ -314,24 +330,7 @@ class ZMicroApp {
     if (this.moduleCount > 0) {
       return ;
     }
-    // 最大检测次数
-    let maxCheckCount = 50;
-    const checkMount = () => {
-      const timer = setTimeout(() => {
-        const mount = this.sandbox.sideEffect.evtListenerTypes['mount']
-        if (mount) {
-          clearTimeout(timer)
-          this.sandbox.sideEffect.evt.dispatch('mount');
-        } else if(--maxCheckCount <= 0) {
-          clearTimeout(timer)
-          console.log('未检测到mount事件绑定，请检查是否有问题');
-        } else {
-          checkMount()
-        }
-      }, 10)
-    }
-    // 检测是否绑定了mount事件
-    checkMount();
+    this.sandbox.sideEffect.evt.dispatch('mount');
   }
 
   /**
