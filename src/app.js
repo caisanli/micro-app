@@ -111,7 +111,6 @@ class ZMicroApp {
      */
   loadCode() {
     if(++this.fetchCount >= 2) {
-      this.hasModule = this.moduleCount > 0;
       this.cacheModuleCount = this.moduleCount;
       this.mount();
     }
@@ -174,9 +173,7 @@ class ZMicroApp {
     // 预加载资源类型请求次数
     this.prefetchCount = 0;
     // 是否支持module
-    this.module = !isProd;
-    // 是否有module
-    this.hasModule = false;
+    this.module = option.module || !isProd;
     // 记录module的数量
     this.moduleCount = 0;
     // 缓存module的数量
@@ -307,11 +304,17 @@ class ZMicroApp {
       try {
         // 执行样式代码
         this.execStyle(this.styleCodes);
-        // 执行script代码
-        this.execScript(this.scriptCodes, () => {
+        if (!this.module || (prevStatusIsInit && this.moduleCount > 0)) {
+          // 执行script代码
+          this.execScript(this.scriptCodes, () => {
+            // 触发mount事件
+            this.emitMount();
+          });
+        } else {
           // 触发mount事件
           this.emitMount();
-        });
+        }
+
         // 监听head
         this.observerHeadFn();
         // 监听body
@@ -326,10 +329,6 @@ class ZMicroApp {
    * 触发mount事件
    */
   emitMount() {
-    // 如果module未加载完毕，则不触发mount事件
-    if (this.moduleCount > 0) {
-      return ;
-    }
     this.sandbox.sideEffect.evt.dispatch('mount');
   }
 
@@ -355,8 +354,10 @@ class ZMicroApp {
     this.sandbox.sideEffect.evt.dispatch('unmount');
     // 清空blob url
     this.clearBlobUrls();
-    // 停止沙箱
-    this.sandbox.stop();
+    if (!this.moduleCount) {
+      // 停止沙箱
+      this.sandbox.stop();
+    }
     // 取消监听head元素
     this.observerHead && this.observerHead.disconnect();
     // 取消监听body元素

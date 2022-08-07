@@ -2,7 +2,7 @@
  * 处理入口文件的一些方法
  */
 /* eslint-disable */
-import {getUrlOrigin, fetchResource, isSupportMoudule, isAsyncScript, isViteLegacyEntry} from './index';
+import {getUrlOrigin, fetchResource, isSupportMoudule, isViteLegacyEntry} from './index';
 
 // 是否是生产环境
 export const isProd = process.env.NODE_ENV !== 'development';
@@ -178,7 +178,7 @@ function parseScript(parentNode, node, app) {
     const isExternal = externalLinks.includes(src);
     const newSrc = getAbsoluteHref(src, app.origin);
     scriptItem.isExternal = isExternal;
-    scriptItem.href = isNoModule ? src : newSrc;
+    scriptItem.href = (isNoModule || isModule) ? src : newSrc;
     const comment = document.createComment(`<script src="${newSrc}" />`);
     parentNode.insertBefore(comment, node);
     parentNode.removeChild(node);
@@ -187,7 +187,7 @@ function parseScript(parentNode, node, app) {
     parentNode.removeChild(node);
   }
 
-  if (isAsyncScript(scriptItem)) {
+  if (isModule) {
     app.moduleCount++
   }
 
@@ -358,19 +358,18 @@ export function createScriptElement(app, item, next) {
       newCode = code.replace(reg, all => {
         return all.replace(`/${name}/`, `${app.url}/`);
       });
+      const blob = new Blob([newCode], { type: 'text/javascript' });
+      const url = URL.createObjectURL(blob);
+      scriptElem.src = url;
+      app.blobUrls.push(url);
     } else {
       // 生产环境下
-      // 替换相对路径为绝对路径，如：'./vendor.7217b224.js'替换为'http://127.0.0.1:1004/vite/vendor.7217b224.js'
-      // 保证module能准确引入
-      // 这里需要保证vite.config.js的build.assetsDir必须为assets
-      newCode = code.replace(/(from|import\()(\s*['"])(\.\.?\/)/g, (all, $1, $2, $3) => {
-        return all.replace($3, `${app.url}/assets/`);
-      });
+      if (href) {
+        scriptElem.src = href;
+      } else {
+        scriptElem.textContent = code;
+      }
     }
-    const blob = new Blob([newCode], { type: 'text/javascript' });
-    const url = URL.createObjectURL(blob);
-    scriptElem.src = url;
-    app.blobUrls.push(url);
   } else if (isNoModule && !isViteLegacyEntry(item)) {
     scriptElem.setAttribute('data-nomodule', 'true');
     if (href) {
@@ -397,21 +396,18 @@ export function createScriptElement(app, item, next) {
   scriptElem.async = false
   // 监听script加载完成
   scriptElem.addEventListener('load', () => {
-    app.moduleCount--;
     next();
   })
   // 加载失败也算成功
   scriptElem.addEventListener('error', (error) => {
     console.log(error)
-    app.moduleCount--;
     next();
   })
 
   app.el.appendChild(scriptElem);
 
   // 空标签的script标签不用等加载完毕
-  if (isViteLegacyEntry(item)) {
-    app.moduleCount--;
+  if (!scriptElem.src) {
     next();
   }
 }
