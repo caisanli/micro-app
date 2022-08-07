@@ -8,7 +8,11 @@ exports.default = function() {
     .pipe(eslint.format())
     .pipe(eslint.failAfterError())
     .pipe(babel({
-      presets: ['@babel/env']
+      presets: [
+        ['@babel/env',{
+          modules: false
+        }]
+      ]
     }))
     .pipe(dest('lib'));
 };
