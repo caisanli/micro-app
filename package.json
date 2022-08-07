@@ -3,6 +3,7 @@
   "version": "1.0.2",
   "description": "",
   "main": "./lib/index.js",
+  "types": "./types/index.d.ts",
   "scripts": {
     "build": "gulp",
     "lint": "eslint --ext ./src/**/*.js",
@@ -14,7 +15,8 @@
   },
   "files": [
     "lib",
-    "src"
+    "src",
+    "types"
   ],
   "author": "",
   "license": "ISC",
