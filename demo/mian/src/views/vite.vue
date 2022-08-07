@@ -1,6 +1,6 @@
 /* eslint-disable */
 <template>
-  <micro-app name="vite" url="/vite" />
+  <micro-app name="vite" url="/vite" module />
 </template>
 
 <script>

@@ -13,13 +13,12 @@ const zxjMicroPlugin = function():PluginOption {
       console.log('basePath：', basePath)
     },
     writeBundle(options, bundle) {
-      console.log('writeBundle')
       for (const chunkName in bundle) {
         if (Object.prototype.hasOwnProperty.call(bundle, chunkName)) {
           const chunk = bundle[chunkName]
           if (chunk.fileName && chunk.fileName.lastIndexOf('.js') > -1) {
             // console.log(chunk)
-            const ORIGIN = 'http://0.0.0.0'
+            const ORIGIN = 'http://192.168.0.103:8080'
             // @ts-ignore
             chunk.code = chunk.code.replace(/(from|import\()(\s*['"])(\.\.?\/)/g, (all, $1, $2, $3) => {
               const fullPath = new URL($3, ORIGIN + basePath)
@@ -54,10 +53,10 @@ export default defineConfig({
   },
   plugins: [
     vue(),
-    // zxjMicroPlugin(),
-    legacy({
-      targets: ['ie >= 10'],
-      additionalLegacyPolyfills: ['regenerator-runtime/runtime']
-    })
+    zxjMicroPlugin(),
+    // legacy({
+    //   targets: ['ie >= 10'],
+    //   additionalLegacyPolyfills: ['regenerator-runtime/runtime']
+    // })
   ]
 })
