@@ -4,6 +4,8 @@
  */
 import micro from './micro';
 import { baseAppEvent as _baseAppEvent } from './sandbox/event';
+import VitePlugin from './plugin/vite';
 
 export const baseAppEvent = _baseAppEvent;
 export const MicroApp = micro;
+export const MicroAppVitePlugin = VitePlugin;
