@@ -342,12 +342,15 @@ class ZMicroApp {
      * 取消挂载
      */
   unmount() {
-    if(this.status === 'unmount') {
+    if (this.status === 'unmount') {
       return ;
     }
     this.status = 'unmount';
-    // 清空动态添加的style元素
-    this.clearHeadStyle();
+    // 如果没有module 或者 有module且是生产环境就要清除动态添加的style
+    if (!this.moduleCount || (this.moduleCount && isProd)) {
+      // 清空动态添加的style元素
+      this.clearHeadStyle();
+    }
     // 清空动态添加的元素
     this.clearNodes();
     // 触发unmount事件
