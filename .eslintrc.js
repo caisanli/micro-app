@@ -1,20 +1,24 @@
 module.exports = {
   root: true,
-  extends: ['eslint:recommended'],
+  extends: [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+  ],
   rules: {
     'indent': ['error', 2],
     'semi': ['error', 'always'],
-    'quotes': ['error', 'single']
-    // "quotes": ["error"],
-    // 'eqeqeq': ['error', 'smart']
+    'quotes': ['error', 'single'],
+    '@typescript-eslint/no-var-requires': ['off']
   },
-  'parserOptions': {
+  parserOptions: {
     'ecmaVersion': 6,
     'sourceType': 'module',
     'ecmaFeatures': {
       'jsx': true
     }
   },
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint'],
   /**
    * 设置对应环境的全局变量
    */
