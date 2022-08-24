@@ -3,8 +3,9 @@
  * Use of this source code is goverened by a BSD-style
  * license that can be found in the LICENSE file.
  */
-
-let registrationsTable = new WeakMap();
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck - may need to be at the start of file
+const registrationsTable = new WeakMap();
 
 // We use setImmediate or postMessage for our future callback.
 let setImmediate = window.msSetImmediate;
@@ -12,10 +13,10 @@ let setImmediate = window.msSetImmediate;
 // Use post message to emulate setImmediate.
 if (!setImmediate) {
   let setImmediateQueue = [];
-  let sentinel = String(Math.random());
+  const sentinel = String(Math.random());
   window.addEventListener('message', function (e) {
     if (e.data === sentinel) {
-      let queue = setImmediateQueue;
+      const queue = setImmediateQueue;
       setImmediateQueue = [];
       queue.forEach(function (func) {
         func();
@@ -58,7 +59,7 @@ function dispatchCallbacks() {
 
   isScheduled = false; // Used to allow a new setImmediate call above.
 
-  let observers = scheduledObservers;
+  const observers = scheduledObservers;
   scheduledObservers = [];
   // Sort observers based on their creation UID (incremental).
   observers.sort(function (o1, o2) {
@@ -68,7 +69,7 @@ function dispatchCallbacks() {
   let anyNonEmpty = false;
   observers.forEach(function (observer) {
     // 2.1, 2.2
-    let queue = observer.takeRecords();
+    const queue = observer.takeRecords();
     // 2.3. Remove all transient registered observers whose observer is mo.
     removeTransientObserversFor(observer);
 
@@ -85,7 +86,7 @@ function dispatchCallbacks() {
 
 function removeTransientObserversFor(observer) {
   observer.nodes_.forEach(function (node) {
-    let registrations = registrationsTable.get(node);
+    const registrations = registrationsTable.get(node);
     if (!registrations) return;
     registrations.forEach(function (registration) {
       if (registration.observer === observer)
@@ -108,17 +109,17 @@ function removeTransientObserversFor(observer) {
  */
 function forEachAncestorAndObserverEnqueueRecord(target, callback) {
   for (let node = target; node; node = node.parentNode) {
-    let registrations = registrationsTable.get(node);
+    const registrations = registrationsTable.get(node);
 
     if (registrations) {
       for (let j = 0; j < registrations.length; j++) {
-        let registration = registrations[j];
-        let options = registration.options;
+        const registration = registrations[j];
+        const options = registration.options;
 
         // Only target ignores subtree.
         if (node !== target && !options.subtree) continue;
 
-        let record = callback(options);
+        const record = callback(options);
         if (record) registration.enqueue(record);
       }
     }
@@ -191,9 +192,9 @@ JsMutationObserver.prototype = {
 
   disconnect: function () {
     this.nodes_.forEach(function (node) {
-      let registrations = registrationsTable.get(node);
+      const registrations = registrationsTable.get(node);
       for (let i = 0; i < registrations.length; i++) {
-        let registration = registrations[i];
+        const registration = registrations[i];
         if (registration.observer === this) {
           registration.removeListeners();
           registrations.splice(i, 1);
@@ -207,7 +208,7 @@ JsMutationObserver.prototype = {
   },
 
   takeRecords: function () {
-    let copyOfRecords = this.records_;
+    const copyOfRecords = this.records_;
     this.records_ = [];
     return copyOfRecords;
   },
@@ -231,7 +232,7 @@ function MutationRecord(type, target) {
 }
 
 function copyMutationRecord(original) {
-  let record = new MutationRecord(original.type, original.target);
+  const record = new MutationRecord(original.type, original.target);
   record.addedNodes = original.addedNodes.slice();
   record.removedNodes = original.removedNodes.slice();
   record.previousSibling = original.previousSibling;
@@ -315,16 +316,16 @@ function Registration(observer, target, options) {
 
 Registration.prototype = {
   enqueue: function (record) {
-    let records = this.observer.records_;
-    let length = records.length;
+    const records = this.observer.records_;
+    const length = records.length;
 
     // There are cases where we replace the last record with the new record.
     // For example if the record represents the same mutation we need to use
     // the one with the oldValue. If we get same record (this can happen as we
     // walk up the tree) we ignore the new record.
     if (records.length > 0) {
-      let lastRecord = records[length - 1];
-      let recordToReplaceLast = selectRecord(lastRecord, record);
+      const lastRecord = records[length - 1];
+      const recordToReplaceLast = selectRecord(lastRecord, record);
       if (recordToReplaceLast) {
         records[length - 1] = recordToReplaceLast;
         return;
@@ -341,7 +342,7 @@ Registration.prototype = {
   },
 
   addListeners_: function (node) {
-    let options = this.options;
+    const options = this.options;
     if (options.attributes) node.addEventListener('DOMAttrModified', this, true);
 
     if (options.characterData)
@@ -358,7 +359,7 @@ Registration.prototype = {
   },
 
   removeListeners_: function (node) {
-    let options = this.options;
+    const options = this.options;
     if (options.attributes)
       node.removeEventListener('DOMAttrModified', this, true);
 
@@ -393,14 +394,14 @@ Registration.prototype = {
   },
 
   removeTransientObservers: function () {
-    let transientObservedNodes = this.transientObservedNodes;
+    const transientObservedNodes = this.transientObservedNodes;
     this.transientObservedNodes = [];
 
     transientObservedNodes.forEach(function (node) {
       // Transient observers are never added to the target.
       this.removeListeners_(node);
 
-      let registrations = registrationsTable.get(node);
+      const registrations = registrationsTable.get(node);
       for (let i = 0; i < registrations.length; i++) {
         if (registrations[i] === this) {
           registrations.splice(i, 1);
@@ -422,17 +423,17 @@ Registration.prototype = {
     case 'DOMAttrModified': {
       // http://dom.spec.whatwg.org/#concept-mo-queue-attributes
 
-      let name = e.attrName;
-      let namespace = e.relatedNode.namespaceURI;
-      let target = e.target;
+      const name = e.attrName;
+      const namespace = e.relatedNode.namespaceURI;
+      const target = e.target;
 
       // 1.
-      let record = new getRecord('attributes', target);
+      const record = new getRecord('attributes', target);
       record.attributeName = name;
       record.attributeNamespace = namespace;
 
       // 2.
-      let oldValue =
+      const oldValue =
           e.attrChange === MutationEvent.ADDITION ? null : e.prevValue;
 
       forEachAncestorAndObserverEnqueueRecord(target, function (options) {
@@ -457,16 +458,16 @@ Registration.prototype = {
 
       break;
     }
-        
+
     case 'DOMCharacterDataModified': {
       // http://dom.spec.whatwg.org/#concept-mo-queue-characterdata
-      let target = e.target;
+      const target = e.target;
 
       // 1.
-      let record = getRecord('characterData', target);
+      const record = getRecord('characterData', target);
 
       // 2.
-      let oldValue = e.prevValue;
+      const oldValue = e.prevValue;
 
       forEachAncestorAndObserverEnqueueRecord(target, function (options) {
         // 3.1, 4.2
@@ -482,14 +483,14 @@ Registration.prototype = {
 
       break;
     }
-        
+
     case 'DOMNodeRemoved':
       this.addTransientObserver(e.target);
       // Fall through.
     case 'DOMNodeInserted': {
       // http://dom.spec.whatwg.org/#concept-mo-queue-childlist
-      let target = e.relatedNode;
-      let changedNode = e.target;
+      const target = e.relatedNode;
+      const changedNode = e.target;
       let addedNodes, removedNodes;
       if (e.type === 'DOMNodeInserted') {
         addedNodes = [changedNode];
@@ -498,11 +499,11 @@ Registration.prototype = {
         addedNodes = [];
         removedNodes = [changedNode];
       }
-      let previousSibling = changedNode.previousSibling;
-      let nextSibling = changedNode.nextSibling;
+      const previousSibling = changedNode.previousSibling;
+      const nextSibling = changedNode.nextSibling;
 
       // 1.
-      let record = getRecord('childList', target);
+      const record = getRecord('childList', target);
       record.addedNodes = addedNodes;
       record.removedNodes = removedNodes;
       record.previousSibling = previousSibling;
@@ -516,7 +517,7 @@ Registration.prototype = {
         return record;
       });
     }
-        
+
     }
 
     clearRecords();

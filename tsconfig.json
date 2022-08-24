@@ -9,19 +9,21 @@
     /* Language and Environment */
     "target": "es5",
     /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
-    "emitDecoratorMetadata": true,
+//    "emitDecoratorMetadata": true,
     /* Emit design-type metadata for decorated declarations in source files. */
 
     /* Modules */
     "module": "esnext",
     /* Specify what module code is generated. */
-    "rootDir": "./",
+//    "rootDir": "./",
     /* Specify the root folder within your source files. */
-    "baseUrl": "./",
+//    "baseUrl": "./",
     /* Specify the base directory to resolve non-relative module names. */
-    "paths": {},
+//    "paths": {},
     /* Specify a set of entries that re-map imports to additional lookup locations. */
-    "types": [],
+    "types": [
+      "node",
+    ],
     /* Specify type package names to be included without being referenced in a source file. */
 
     /* Emit */
@@ -29,25 +31,29 @@
     /* Generate .d.ts files from TypeScript and JavaScript files in your project. */
     "emitDeclarationOnly": true,
     /* Only output d.ts files and not JavaScript files. */
-    "outDir": "./",
+    "outDir": "./types",
     /* Specify an output folder for all emitted files. */
     /* Interop Constraints */
-    "esModuleInterop": true,
-    /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */
-    "forceConsistentCasingInFileNames": true,
-    /* Ensure that casing is correct in imports. */
-
+//    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    // Ensure that .d.ts files are created by tsc, but not .js files
+    // Ensure that Babel can safely transpile files in the TypeScript project
+    "isolatedModules": true,
     /* Type Checking */
-    "strict": true,
+//    "strict": true,
     /* Enable all strict type-checking options. */
     "noImplicitAny": true,
     /* Enable error reporting for expressions and declarations with an implied 'any' type. */
-    "strictFunctionTypes": true,
+//    "strictFunctionTypes": true,
     /* When assigning functions, check to ensure parameters and the return values are subtype-compatible. */
-
+    "moduleResolution": "node",
     /* Completeness */
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true
     /* Skip type checking all .d.ts files. */
-  }
+  },
+  "include": [
+    "src/**/*.ts",
+    "typings/**/*.d.ts"
+  ],
 }

@@ -2,8 +2,9 @@
  * 处理入口文件的一些方法
  */
 /* eslint-disable */
-import {getUrlOrigin, fetchResource, isSupportMoudule, isViteLegacyEntry} from './index';
-
+import {getUrlOrigin, fetchResource, isSupportModule, isViteLegacyEntry} from './index';
+import type { LinkItem, MicroApp, ScriptItem } from '@zxj/micro';
+import ZMicroApp from '../app'
 // 是否是生产环境
 export const isProd = process.env.NODE_ENV !== 'development';
 
@@ -13,7 +14,7 @@ export const isProd = process.env.NODE_ENV !== 'development';
  * @param {*} app 子应用实例
  * @returns
  */
-export function parseHtml(html, app) {
+export function parseHtml(html: string, app: ZMicroApp): HTMLElement {
   const parent = document.createElement('div');
   parent.innerHTML = html;
   recursionGetSource(parent, app);
@@ -29,18 +30,21 @@ export function parseHtml(html, app) {
  * 获取css样式
  * @param {*} app 应用实例
  */
-function getStyle(app) {
+function getStyle(app: ZMicroApp) {
   const links = app.links;
-  const list = [];
+  const list: (LinkItem | Promise<LinkItem>)[] = [];
   links.forEach(item => {
     if(item.href) {
-      list.push(setRemoteCssScoped(item.href, app));
+      list.push(setRemoteCssScoped(item, app));
     } else {
-      list.push(item.code);
+      list.push({
+        code: item.code,
+        ...item
+      });
     }
   });
   Promise.all(list).then(codes => {
-    app.styleCodes = codes;
+    app.links = codes;
     app.loadCode();
   });
 }
@@ -49,9 +53,9 @@ function getStyle(app) {
  * 获取JavaScript
  * @param {*} app 应用实例
  */
-function getScript(app) {
+function getScript(app: ZMicroApp) {
   const scripts = app.scripts;
-  const list = [];
+  const list: (ScriptItem| Promise<ScriptItem>)[] = [];
   scripts.forEach(item => {
     if(item.href) {
       list.push(getRemoteScript(item));
@@ -60,7 +64,7 @@ function getScript(app) {
     }
   });
   Promise.all(list).then(codes => {
-    app.scriptCodes = codes;
+    app.scripts = codes;
     app.loadCode();
   });
 }
@@ -70,9 +74,9 @@ function getScript(app) {
  * @param {*} item
  * @returns
  */
-function getRemoteScript(item) {
+function getRemoteScript(item: ScriptItem) {
   const obj = Object.assign({}, item);
-  if(item.isExternal) {
+  if (item.isExternal) {
     return Promise.resolve(obj);
   }
   return fetchResource(item.href).then(code => {
@@ -83,17 +87,20 @@ function getRemoteScript(item) {
 
 /**
  * 设置远程css作用域
- * @param {*} href
+ * @param {*} item
  * @param {*} app
  * @returns
  */
-function setRemoteCssScoped(href, app) {
-  return fetchResource(href).then(css => {
-    return setLocalCssScoped(css, app);
+function setRemoteCssScoped(item: LinkItem, app: ZMicroApp) {
+  return fetchResource(item.href).then(css => {
+    return {
+      code: setLocalCssScoped(css, app),
+      ...item
+    };
   });
 }
 
-function setLocalCssScoped(css, app) {
+function setLocalCssScoped(css: string, app: ZMicroApp) {
   const style = document.createElement('style');
   style.textContent = css;
   document.body.appendChild(style);
@@ -108,22 +115,22 @@ function setLocalCssScoped(css, app) {
  * @param {*} element
  * @param {*} app
  */
-function recursionGetSource(element, app) {
-  [...element.childNodes].forEach(child => {
+function recursionGetSource(element: HTMLElement, app: ZMicroApp) {
+  Array.from(element.childNodes).forEach(child => {
     const nodeName = child.nodeName;
     switch(nodeName) {
     case 'META':
     case 'TITLE':
       break;
     case 'STYLE': {
-      parseStyle(element, child, app);
+      parseStyle((element as HTMLStyleElement), (child as HTMLStyleElement), app);
       break;
     }
     case 'LINK':
-      parseLink(element, child, app);
+      parseLink((element as HTMLStyleElement), (child as HTMLStyleElement), app);
       break;
     case 'SCRIPT':
-      parseScript(element, child, app);
+      parseScript(element, (child as HTMLScriptElement), app);
       break;
     }
   });
@@ -137,12 +144,12 @@ function recursionGetSource(element, app) {
  * @param {*} node 当前script节点
  * @param {*} app 应用实例
  */
-function parseScript(parentNode, node, app) {
+function parseScript(parentNode: HTMLElement, node: HTMLScriptElement, app: ZMicroApp) {
   const src = node.getAttribute('src');
   const type = node.getAttribute('type');
   const isModule = type === 'module'; // 是否是module
   const isNoModule = node.hasAttribute('nomodule');
-  const supportModule = app.module && isSupportMoudule();
+  const supportModule = app.module && isSupportModule();
   const id = node.getAttribute('id');
   const dataSrc = node.getAttribute('data-src');
   // 如果 nomodule 属性存在且浏览器支持 script module，则不处理
@@ -153,7 +160,7 @@ function parseScript(parentNode, node, app) {
     return ;
   }
   // 如果是script module
-  if(isModule) {
+  if (isModule) {
     // 并且浏览器不支持，则不处理
     if (!supportModule) {
       const comment = document.createComment(`当前子应用不支持 module <script src="${src}" />${node.textContent}</script>`);
@@ -162,7 +169,7 @@ function parseScript(parentNode, node, app) {
       return
     }
   }
-  const scriptItem = {
+  const scriptItem: ScriptItem = {
     type,
     isModule,
     isNoModule,
@@ -172,9 +179,9 @@ function parseScript(parentNode, node, app) {
     id,
     dataSrc
   }
-  if(src) { // 远程脚本
+  if (src) { // 远程脚本
     // 是否是外部链接，外部链接就不做处理
-    const { externalLinks } = app.option;
+    const externalLinks = app.externalLinks;
     const isExternal = externalLinks.includes(src);
     const newSrc = getAbsoluteHref(src, app.origin);
     scriptItem.isExternal = isExternal;
@@ -201,8 +208,8 @@ function parseScript(parentNode, node, app) {
  * @param {*} node 当前link节点
  * @param {*} app 应用实例
  */
-function parseLink(parentNode, node, app) {
-  const { externalLinks } = app.option;
+function parseLink(parentNode: HTMLStyleElement, node: HTMLStyleElement, app: ZMicroApp) {
+  const externalLinks = app.externalLinks;
   const rel = node.getAttribute('rel');
   const href = node.getAttribute('href');
   const as = node.getAttribute('as');
@@ -212,7 +219,7 @@ function parseLink(parentNode, node, app) {
   if(isExternal) return ;
 
   const newHref = getAbsoluteHref(href, app.origin);
-  if(href && rel === 'stylesheet') { // 外部链接
+  if (href && rel === 'stylesheet') { // 外部链接
     app.links.push({
       href: newHref,
       code: ''
@@ -233,7 +240,7 @@ function parseLink(parentNode, node, app) {
  * @param {*} node 当前style节点
  * @param {*} app 应用实例
  */
-function parseStyle(parentNode, node, app) {
+function parseStyle(parentNode: HTMLStyleElement, node: HTMLStyleElement, app: ZMicroApp) {
   node.textContent = setLocalCssScoped(node.textContent, app);
 }
 
@@ -242,9 +249,9 @@ function parseStyle(parentNode, node, app) {
  * @param node style节点
  * @param app 应用实例
  */
-export function scopedCssStyle(node, app) {
-  const cssRules = node.sheet.cssRules;
-  const styleList = [];
+export function scopedCssStyle(node: HTMLStyleElement, app: ZMicroApp) {
+  const cssRules:CSSRuleList = node.sheet.cssRules;
+  const styleList: string[] = [];
   parseCssRules(cssRules, styleList, app);
   node.textContent = styleList.join(' ');
 }
@@ -255,16 +262,16 @@ export function scopedCssStyle(node, app) {
  * @param {*} styleList 存储样式列表
  * @param {*} app 应用实例
  */
-function parseCssRules(cssRules, styleList, app) {
+function parseCssRules(cssRules:CSSRuleList, styleList: string[], app: MicroApp) {
   const name = app.name;
   const scopedName = app.scopedName;
-  const { disableStyleSandbox } = app.option;
+  const disableStyleSandbox = app.disableStyleSandbox;
   Array.from(cssRules).forEach(rule => {
     const type = rule.type;
-    if(type === 4) { // @media 媒体查询
-      const mediaStyleText = [];
-      const conditionText = rule.media.mediaText;
-      parseCssRules(rule.cssRules, mediaStyleText, app);
+    if (type === 4) { // @media 媒体查询
+      const mediaStyleText: string[] = [];
+      const conditionText = (rule as CSSMediaRule).media.mediaText;
+      parseCssRules((rule as CSSGroupingRule).cssRules, mediaStyleText, app);
       const newStyleText = `@media ${conditionText} { ${ mediaStyleText.join(' ') } }`;
       styleList.push(newStyleText);
     } else if(type === 5) { // @font-face
@@ -299,12 +306,12 @@ function parseCssRules(cssRules, styleList, app) {
         console.log(error);
       }
     } else { // 普通选择器
-      const selectorText = rule.selectorText || '';
+      const selectorText = (rule as CSSStyleRule).selectorText || '';
       let cssText = rule.cssText || '';
 
       // 处理background相对路径
-      if(rule.style && rule.style.backgroundImage) {
-        let backgroundImage = rule.style.backgroundImage;
+      if((rule as CSSStyleRule).style && (rule as CSSStyleRule).style.backgroundImage) {
+        let backgroundImage = (rule as CSSStyleRule).style.backgroundImage;
         if(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/.test(backgroundImage)) {
           let newBackgroundImage = backgroundImage.replace(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/, (str, url, prefix) => {
             return `url("${url.replace(prefix, `/${name}/`)}")`;
@@ -332,7 +339,7 @@ function parseCssRules(cssRules, styleList, app) {
  * @param {*} origin
  * @returns
  */
-function getAbsoluteHref(href, origin) {
+function getAbsoluteHref(href: string, origin: string) {
   return getUrlOrigin(href) ? href : `${origin}${href.startsWith('/') ? href: '/' + href}`;
 }
 
@@ -342,7 +349,7 @@ function getAbsoluteHref(href, origin) {
  * @param item
  * @param next 资源加载完毕的回调函数
  */
-export function createScriptElement(app, item, next) {
+export function createScriptElement(app: ZMicroApp, item: ScriptItem, next: () => void) {
   const { href, type, code, isModule, isNoModule, id, dataSrc } = item;
   const scriptElem = document.createElement('script');
   if (isModule) {

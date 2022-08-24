@@ -1,12 +1,24 @@
 /**
  * 工具类方法
  */
+import { ScriptItem } from '@zxj/micro';
+
 /**
  * 拉取资源
  * @param url
  */
-export function fetchResource (url) {
-  return ajax({url}).then(res => res);
+
+export function fetchResource (url: string): Promise<string> {
+  return ajax({url}).then(res => (res as string));
+}
+
+export type AjaxOptions = {
+  url: string;
+  method?: string;
+  data?: Document | XMLHttpRequestBodyInit | null;
+  headers?: {
+    [key: string]: string;
+  };
 }
 
 /**
@@ -14,21 +26,23 @@ export function fetchResource (url) {
  * @param {*} opt
  * @returns
  */
-export function ajax(opt = {}) {
+export function ajax(opt: AjaxOptions) {
   return new Promise((resolve, reject) => {
-    let { url, method, data, headers } = opt;
+    let { url, method, data,  } = opt;
+    const { headers } = opt;
     url = url || '';
     method = method || 'get';
-    data = data || {};
-    headers = headers || {};
+    data = data || null;
+    const cHeaders = headers || {};
     const xhr = new XMLHttpRequest();
-    xhr.onload = function(data) {
-      resolve(data.target.response);
+    xhr.onload = function() {
+      resolve(xhr.response);
     };
     xhr.onerror = reject;
     xhr.open(method, url);
-    Object.keys(headers).forEach(key => {
-      xhr.setRequestHeader(key, headers[key]);
+    Object.keys(cHeaders).forEach(key => {
+      const value = cHeaders[key];
+      xhr.setRequestHeader(key, value);
     });
     xhr.send(data);
   });
@@ -39,7 +53,7 @@ export function ajax(opt = {}) {
  * @param {*} url
  * @returns
  */
-export function getUrlOrigin(url) {
+export function getUrlOrigin(url: string): string {
   const reg = /(^www\.[^/]+[\da-zA-Z])|(^http[s]?:\/\/[^/]+)/;
   const result = reg.exec(url);
   if(!result) return '';
@@ -51,7 +65,7 @@ export function getUrlOrigin(url) {
  * 是否是绝对路径
  * @param {*} url
  */
-export function isAbsolutePath(url) {
+export function isAbsolutePath(url: string) {
   const reg = /(^www\.)|(^http[s]?:\/\/)/;
   return reg.test(url);
 }
@@ -60,7 +74,7 @@ export function isAbsolutePath(url) {
  * 获取URL
  * @param {*} url
  */
-export function getUrl(url) {
+export function getUrl(url: string) {
   const reg = /(^www\.[^/]+[\da-zA-Z])|(^http[s]?:\/\/[^/]+[\d]+)/;
   if(reg.test(url)) {
     return url;
@@ -75,7 +89,7 @@ export function getUrl(url) {
 export const requestHostCallback =
     window.requestIdleCallback ||
     function(cb) {
-      let start = Date.now();
+      const start = Date.now();
       return setTimeout(() => {
         cb({
           didTimeout: false,
@@ -87,7 +101,7 @@ export const requestHostCallback =
     };
 
 export const cancelIdleCallback =
-    window.cancelIdleCallback || function(id) {
+    window.cancelIdleCallback || function(id: number) {
       clearTimeout(id);
     };
 
@@ -95,9 +109,9 @@ export const cancelIdleCallback =
  * 是否支持 script module
  * @returns {boolean}
  */
-export function isSupportMoudule () {
+export function isSupportModule () {
   const script = document.createElement('script');
-  script.setAttribute('nomodule', null);
+  script.setAttribute('nomodule', 'null');
   return script.noModule !== undefined;
 }
 
@@ -106,7 +120,7 @@ export function isSupportMoudule () {
  * @param item
  * @returns {*|boolean}
  */
-export function isAsyncScript (item) {
+export function isAsyncScript (item: ScriptItem) {
   return item.isExternal || item.isModule || item.isNoModule;
 }
 
@@ -115,6 +129,6 @@ export function isAsyncScript (item) {
  * @param item
  * @returns {*}
  */
-export function isViteLegacyEntry (item) {
+export function isViteLegacyEntry (item: ScriptItem) {
   return item.id && item.id.includes('vite') && item.dataSrc;
 }

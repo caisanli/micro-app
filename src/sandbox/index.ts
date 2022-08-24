@@ -6,10 +6,15 @@ import DiffSandbox from './diff';
 import SideEffect from './sideEffect';
 // import ProxSandbox from './proxySandbox';
 class Sandbox {
-  constructor(name) {
+  id: string;
+  name: string;
+  sideEffect: SideEffect;
+  proxyWindow: DiffSandbox;
+  active: boolean;
+  constructor(name: string) {
     // this.supportProxy = !!window.Proxy
     // if(this.supportProxy) {
-    //     this.proxyWindow = new ProxSandbox()
+    //     this.proxyWindow = new ProxySandbox()
     // } else {
     //     this.proxyWindow = new DiffSandbox()
     // }
@@ -22,7 +27,7 @@ class Sandbox {
     this.active = false;
   }
   // 修改js作用域
-  bindScope(code) {
+  bindScope(code: string) {
     return `;(function(window, self){with(window){;${code}\n}}).call(window, window, window);`;
   }
   // 开启沙箱
@@ -30,6 +35,8 @@ class Sandbox {
     if (this.active) return;
     this.active = true;
     // 每个子系统独有副作用处理
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     window[this.id] = this.sideEffect;
     // 先启副作用
     this.sideEffect.start();
@@ -40,6 +47,8 @@ class Sandbox {
   stop() {
     if (!this.active) return;
     this.active = false;
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     delete window[this.id];
     // 先停止沙箱
     this.proxyWindow.stop();
