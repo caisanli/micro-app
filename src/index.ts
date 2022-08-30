@@ -12,3 +12,5 @@ export {
   MicroApp,
   microAppVitePlugin
 };
+
+export default MicroApp;

@@ -191,16 +191,11 @@ class ZMicroApp {
     const name = _options.name;
     this.status = 'init';
     this.name = name;
-    // 入口访问地址
     this.url = getUrl(_options.url);
     this.origin = getUrlOrigin(this.url);
-    // 统一设置作用域名称
     this.scopedName = 'zxj_micro_' + name;
-    // 存放css代码
     this.module = _options.module || !isProd;
-    // 外链
     this.externalLinks = _options.externalLinks || [];
-    // 沙箱
     this.sandbox = new Sandbox(name);
     // 处理入口文件
     this.parseEntry();
@@ -321,7 +316,7 @@ class ZMicroApp {
       try {
         // 执行样式代码
         this.execStyle();
-        if (!this.module || (prevStatusIsInit && this.moduleCount > 0)) {
+        if (!this.moduleCount || (prevStatusIsInit && this.moduleCount > 0)) {
           // 执行script代码
           this.execScript(this.scripts, () => {
             // 触发mount事件
