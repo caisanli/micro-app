@@ -1,8 +1,7 @@
 /**
  * 事件处理器
  */
-
-type EventCallback = (data?: any) => void;
+import { EventCallback, EventDataType } from '@zxj/micro';
 
 class Event {
   /**
@@ -50,7 +49,7 @@ class Event {
    * @param {*} name 事件名称
    * @param {*} data 数据
    */
-  dispatch(name: string, data?: any) {
+  dispatch(name: string, data?: EventDataType) {
     const callbackList = this.event[name];
     if (Array.isArray(callbackList)) {
       callbackList.forEach(callback => callback(data));
@@ -75,26 +74,18 @@ const newEvent = new Event();
 
 export default newEvent;
 
-
 /**
  * 主系统事件处理
  */
 class BaseAppEvent {
-  setData(data?: any) {
-    newEvent.dispatch('data', data);
-  }
-
-  onData(callback: EventCallback) {
-    newEvent.on('data', callback);
-  }
 
   on(key: string, callback: EventCallback) {
     newEvent.on(key, callback);
   }
 
-  dispatch(key: string, data?: any) {
+  dispatch(key: string, data?: EventDataType) {
     newEvent.dispatch(key, data);
   }
 }
 
-export const baseAppEvent = new BaseAppEvent();
+export const baseAppEvent = newEvent;

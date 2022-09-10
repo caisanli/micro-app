@@ -1,7 +1,6 @@
 /**
  * 创建Vue MicroApp组件
  */
-// import type { MicroApp } from '@zxj/micro';
 import ZMicroApp from './app';
 import cache from './utils/cache';
 import Vue from 'vue';

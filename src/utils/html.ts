@@ -1,10 +1,9 @@
 /**
  * 处理入口文件的一些方法
  */
-/* eslint-disable */
 import {getUrlOrigin, fetchResource, isSupportModule, isViteLegacyEntry} from './index';
-import type { LinkItem, MicroApp, ScriptItem } from '@zxj/micro';
-import ZMicroApp from '../app'
+import type { LinkItem, ScriptItem } from '@zxj/micro';
+import ZMicroApp from '../app';
 // 是否是生产环境
 export const isProd = process.env.NODE_ENV !== 'development';
 
@@ -166,7 +165,7 @@ function parseScript(parentNode: HTMLElement, node: HTMLScriptElement, app: ZMic
       const comment = document.createComment(`当前子应用不支持 module <script src="${src}" />${node.textContent}</script>`);
       parentNode.insertBefore(comment, node);
       parentNode.removeChild(node);
-      return
+      return;
     }
   }
   const scriptItem: ScriptItem = {
@@ -178,7 +177,7 @@ function parseScript(parentNode: HTMLElement, node: HTMLScriptElement, app: ZMic
     href: '',
     id,
     dataSrc
-  }
+  };
   if (src) { // 远程脚本
     // 是否是外部链接，外部链接就不做处理
     const externalLinks = app.externalLinks;
@@ -195,7 +194,7 @@ function parseScript(parentNode: HTMLElement, node: HTMLScriptElement, app: ZMic
   }
 
   if (isModule) {
-    app.moduleCount++
+    app.moduleCount++;
   }
 
   app.scripts.push(scriptItem);
@@ -262,7 +261,7 @@ export function scopedCssStyle(node: HTMLStyleElement, app: ZMicroApp) {
  * @param {*} styleList 存储样式列表
  * @param {*} app 应用实例
  */
-function parseCssRules(cssRules:CSSRuleList, styleList: string[], app: MicroApp) {
+function parseCssRules(cssRules:CSSRuleList, styleList: string[], app: ZMicroApp) {
   const name = app.name;
   const scopedName = app.scopedName;
   const disableStyleSandbox = app.disableStyleSandbox;
@@ -311,9 +310,9 @@ function parseCssRules(cssRules:CSSRuleList, styleList: string[], app: MicroApp)
 
       // 处理background相对路径
       if((rule as CSSStyleRule).style && (rule as CSSStyleRule).style.backgroundImage) {
-        let backgroundImage = (rule as CSSStyleRule).style.backgroundImage;
+        const backgroundImage = (rule as CSSStyleRule).style.backgroundImage;
         if(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/.test(backgroundImage)) {
-          let newBackgroundImage = backgroundImage.replace(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/, (str, url, prefix) => {
+          const newBackgroundImage = backgroundImage.replace(/url\("?((((\.){1,2}\/)+)[^")]*)"?\)/, (str, url, prefix) => {
             return `url("${url.replace(prefix, `/${name}/`)}")`;
           });
           cssText = cssText.replace(backgroundImage, newBackgroundImage);
@@ -400,16 +399,16 @@ export function createScriptElement(app: ZMicroApp, item: ScriptItem, next: () =
   if (type) {
     scriptElem.type = type;
   }
-  scriptElem.async = false
+  scriptElem.async = false;
   // 监听script加载完成
   scriptElem.addEventListener('load', () => {
     next();
-  })
+  });
   // 加载失败也算成功
   scriptElem.addEventListener('error', (error) => {
-    console.log(error)
+    console.log(error);
     next();
-  })
+  });
 
   app.el.appendChild(scriptElem);
 
