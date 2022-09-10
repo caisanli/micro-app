@@ -4,8 +4,8 @@ import VueRouter from 'vue-router';
 Vue.use(VueRouter);
 
 const router =  new VueRouter({
-    mode: 'hash',
-    // base: '/child/',
+    mode: 'history',
+    base: '/wvue2/',
     routes: [{
         path: '/vue2/*',
         component: () => import(/* webpackChunkName: "empty" */ '@/views/empty'),

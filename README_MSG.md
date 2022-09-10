@@ -116,7 +116,7 @@
     
     import { fetchResource, getUrlOrigin, getUrl, requestHostCallback } from './utils';
     import { parseHtml, scopedCssStyle, getPrefetchSource } from './utils/html';
-    import Sandbox from './sandbox/index.js';
+    import Sandbox from './sandbox/index.ts';
     import _JsMutationObserver from './utils/MutationObserver';
     class ZMicroApp {
         /**

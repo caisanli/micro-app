@@ -5,9 +5,7 @@
 
 <script>
 /* eslint-disable */
-import MicroApp from '../../../../src/micro';
-console.log('MicroApp：', MicroApp)
-// import { ref } from 'vue';
+import MicroApp from '../../../../src/index';
 export default {
   components: {
     MicroApp,

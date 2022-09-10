@@ -1,39 +1,41 @@
 import { defineConfig, PluginOption } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import legacy from '@vitejs/plugin-legacy'
+import legacy from '@vitejs/plugin-legacy';
 import { resolve, join } from 'path';
 import { writeFileSync } from 'fs';
 const zxjMicroPlugin = function():PluginOption {
   let basePath = '';
   return {
-    name: "vite:micro-app",
+    name: 'vite:micro-app',
     apply: 'build',
     configResolved(config) {
-      basePath = `${ config.base }${ config.build.assetsDir }/`
-      console.log('basePath：', basePath)
+      basePath = `${ config.base }${ config.build.assetsDir }/`;
+      console.log('basePath：', basePath);
     },
     writeBundle(options, bundle) {
       for (const chunkName in bundle) {
         if (Object.prototype.hasOwnProperty.call(bundle, chunkName)) {
-          const chunk = bundle[chunkName]
+          const chunk = bundle[chunkName];
           if (chunk.fileName && chunk.fileName.lastIndexOf('.js') > -1) {
             // console.log(chunk)
-            const ORIGIN = 'http://192.168.0.103:8080'
+            const ORIGIN = 'http://192.168.0.103:8080';
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             chunk.code = chunk.code.replace(/(from|import\()(\s*['"])(\.\.?\/)/g, (all, $1, $2, $3) => {
-              const fullPath = new URL($3, ORIGIN + basePath)
-              const newPath = fullPath.href.replace(ORIGIN, '')
-              return all.replace($3, newPath)
-            })
-            const fullPath = join(options.dir, chunk.fileName)
+              const fullPath = new URL($3, ORIGIN + basePath);
+              const newPath = fullPath.href.replace(ORIGIN, '');
+              return all.replace($3, newPath);
+            });
+            const fullPath = join(options.dir, chunk.fileName);
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             writeFileSync(fullPath, chunk.code);
           }
         }
       }
     },
-  }
-}
+  };
+};
 
 function _resolve(src: string) {
   return resolve(__dirname, src);
@@ -49,7 +51,8 @@ export default defineConfig({
     ]
   },
   server: {
-    host: '0.0.0.0'
+    host: '0.0.0.0',
+    port: 4173
   },
   plugins: [
     vue(),
@@ -59,4 +62,4 @@ export default defineConfig({
     //   additionalLegacyPolyfills: ['regenerator-runtime/runtime']
     // })
   ]
-})
+});

@@ -5,7 +5,7 @@
 
 <script>
 /* eslint-disable */
-import MicroApp from '../../../../src/micro'
+import MicroApp from '../../../../src/index';
 export default {
   components: {
     MicroApp,
