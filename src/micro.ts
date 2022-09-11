@@ -9,11 +9,18 @@ import Component from 'vue-class-component';
 
 const GreetingProps = Vue.extend({
   props: {
-    name: String, // 全局唯一,
-    url: String, // 子系统入口文件地址（index.html）
-    disableStyleSandbox: Boolean, // 是否禁用样式沙箱 默认值（true）
-    externalLinks: Array, // externalLinks 外部链接不处理
-    module: Boolean // 是否支持 module
+    // 全局唯一
+    name: String,
+    // 子系统入口文件地址（index.html）
+    url: String,
+    // 是否禁用样式沙箱 默认值（true）
+    disableStyleSandbox: Boolean,
+    // externalLinks 外部链接不处理
+    externalLinks: Array,
+    // 是否支持 module
+    module: Boolean,
+    // 是否开启沙箱 默认 false
+    sandbox: Boolean
   }
 });
 
@@ -23,7 +30,7 @@ class MicroAppClass extends GreetingProps {
   app: ZMicroApp;
 
   mounted() {
-    const { name, url, disableStyleSandbox, externalLinks, module } = this;
+    const { name, url, disableStyleSandbox, externalLinks, module, sandbox } = this;
     if(!name || !url) return ;
     // 从缓存中取子系统实例
     const app = cache[name];
@@ -38,7 +45,8 @@ class MicroAppClass extends GreetingProps {
         url,
         disableStyleSandbox,
         externalLinks: externalLinks as string[],
-        module
+        module,
+        sandbox
       });
     }
   }

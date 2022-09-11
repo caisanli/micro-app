@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { fetchResource, getUrlOrigin, getUrl, isAsyncScript, isViteLegacyEntry } from './utils';
+import { fetchResource, getUrlOrigin, getUrl, isAsyncScript, isViteLegacyEntry, isSupportShadowDom } from './utils';
 import { parseHtml, scopedCssStyle, createScriptElement, isProd } from './utils/html';
 import Sandbox from './sandbox/index';
 // @ts-ignore
@@ -15,6 +15,8 @@ class ZMicroApp {
   url = '';
   // 是否支持module
   module = false;
+  // 是否支持沙箱
+  isSandbox = false;
   // 是否禁用样式沙箱
   disableStyleSandbox = true;
   // 外部链接
@@ -23,6 +25,8 @@ class ZMicroApp {
   container: HTMLElement | null = null;
   // 真实容器dom
   el: HTMLElement | null = null;
+  // shadow dom 要可能是 上面的el
+  shadowEl: ShadowRoot | HTMLElement | null = null;
   //
   origin = '';
   // 记录在head标签中动态添加的style、script
@@ -56,12 +60,23 @@ class ZMicroApp {
    */
   insertHtml() {
     this.el = document.getElementById(`zxj_micro-${ this.name }`);
+    const el = this.el;
     const fragment = document.createDocumentFragment();
     const cloneContainer = this.container?.cloneNode(true);
     Array.from(cloneContainer?.childNodes || []).forEach(node => {
       fragment.appendChild(node);
     });
-    this.el && this.el.appendChild(fragment);
+    console.log('this.container：', this.container)
+    if (!el) return ;
+
+    if (this.isSandbox) {
+      const shadow = el.attachShadow({ mode: 'open' })
+      shadow.appendChild(fragment)
+      this.shadowEl = shadow;
+    } else {
+      el.appendChild(fragment)
+      this.shadowEl = el;
+    }
   }
 
   /**
@@ -184,6 +199,7 @@ class ZMicroApp {
       url: '',
       name: '',
       module: false,
+      sandbox: false,
       disableStyleSandbox: true,
       externalLinks: []
     };
@@ -194,6 +210,7 @@ class ZMicroApp {
     this.url = getUrl(_options.url);
     this.origin = getUrlOrigin(this.url);
     this.scopedName = 'zxj_micro_' + name;
+    this.isSandbox = _options.sandbox ? isSupportShadowDom() : false;
     this.module = _options.module || !isProd;
     this.externalLinks = _options.externalLinks || [];
     this.sandbox = new Sandbox(name);
@@ -206,11 +223,10 @@ class ZMicroApp {
    */
   execStyle() {
     try {
-      // const firstChild = this.el.firstChild;
       this.links.forEach(link => {
         const style = document.createElement('style');
         style.textContent = link.code;
-        this.el?.appendChild(style);
+        this.shadowEl?.appendChild(style);
       });
     } catch (error) {
       console.log(error);

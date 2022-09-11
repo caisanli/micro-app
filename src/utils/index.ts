@@ -132,3 +132,10 @@ export function isAsyncScript (item: ScriptItem) {
 export function isViteLegacyEntry (item: ScriptItem) {
   return item.id && item.id.includes('vite') && item.dataSrc;
 }
+
+/**
+ * 检测是否支持shadow dom
+ */
+export function isSupportShadowDom() {
+  return document.createElement('div').shadowRoot !== undefined;
+}

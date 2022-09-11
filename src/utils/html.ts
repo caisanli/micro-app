@@ -410,7 +410,7 @@ export function createScriptElement(app: ZMicroApp, item: ScriptItem, next: () =
     next();
   });
 
-  app.el.appendChild(scriptElem);
+  app.shadowEl.appendChild(scriptElem);
 
   // 空标签的script标签不用等加载完毕
   if (!scriptElem.src) {

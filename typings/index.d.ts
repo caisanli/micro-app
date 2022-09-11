@@ -39,6 +39,7 @@ declare module '@zxj/micro' {
       disableStyleSandbox?: boolean;
       externalLinks?: string[];
       module?: boolean;
+      sandbox?: boolean
    }
 
    /**
