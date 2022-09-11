@@ -1,34 +1,41 @@
 /**
  * 沙箱
  */
-
 import DiffSandbox from './diff';
 import SideEffect from './sideEffect';
-// import ProxSandbox from './proxySandbox';
+import IframeProxy from './proxy';
+import type { BaseSandbox } from '@zxj/micro';
 class Sandbox {
   id: string;
   name: string;
   sideEffect: SideEffect;
-  proxyWindow: DiffSandbox;
+  sandbox: BaseSandbox;
   active: boolean;
-  constructor(name: string) {
-    // this.supportProxy = !!window.Proxy
-    // if(this.supportProxy) {
-    //     this.proxyWindow = new ProxySandbox()
-    // } else {
-    //     this.proxyWindow = new DiffSandbox()
-    // }
+  constructor(name: string, iframeWindow?: Window) {
     this.id = '_zxj_micro_' + name;
     this.name = name;
+    if (iframeWindow !== undefined) {
+      this.sandbox = new IframeProxy(iframeWindow);
+    } else {
+      this.sandbox = new DiffSandbox();
+    }
     // 副作用处理
-    this.sideEffect = new SideEffect(window);
-    // 代理window
-    this.proxyWindow = new DiffSandbox();
+    this.sideEffect = new SideEffect(this.sandbox.proxyWindow);
+
     this.active = false;
   }
   // 修改js作用域
   bindScope(code: string) {
-    return `;(function(window, self){with(window){;${code}\n}}).call(window, window, window);`;
+    return `(function(window, self, global, globalThis, location, history) {
+              ${code}\n
+             }).bind(window.proxyWindow)(
+                window.proxyWindow,
+                window.proxyWindow, 
+                window.proxyWindow, 
+                window.proxyWindow, 
+                window.proxyLocation,
+                window.proxyHistory
+             )`;
   }
   // 开启沙箱
   start() {
@@ -41,7 +48,7 @@ class Sandbox {
     // 先启副作用
     this.sideEffect.start();
     // 再启沙箱
-    this.proxyWindow.start();
+    this.sandbox.start();
   }
   // 关闭沙箱
   stop() {
@@ -51,7 +58,7 @@ class Sandbox {
     // @ts-ignore
     delete window[this.id];
     // 先停止沙箱
-    this.proxyWindow.stop();
+    this.sandbox.stop();
     // 再清副作用
     this.sideEffect.clear();
   }

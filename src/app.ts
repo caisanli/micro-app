@@ -48,6 +48,8 @@ class ZMicroApp {
   blobUrls: string[] = [];
   // 沙箱
   sandbox: Sandbox | null; // = new Sandbox(name);
+  // iframe 实例
+  iframe?: HTMLIFrameElement;
   // 子系统添加的元素
   addNodes: Node[] = [];
 
@@ -66,7 +68,6 @@ class ZMicroApp {
     Array.from(cloneContainer?.childNodes || []).forEach(node => {
       fragment.appendChild(node);
     });
-    console.log('this.container：', this.container)
     if (!el) return ;
 
     if (this.isSandbox) {
@@ -213,9 +214,49 @@ class ZMicroApp {
     this.isSandbox = _options.sandbox ? isSupportShadowDom() : false;
     this.module = _options.module || !isProd;
     this.externalLinks = _options.externalLinks || [];
-    this.sandbox = new Sandbox(name);
-    // 处理入口文件
-    this.parseEntry();
+
+    if (this.isSandbox) {
+      // TODO 还是需要优化一下 预加载iframe
+      // 先暂时这样处理
+      const iframe = this.createIframe(() => {
+        this.iframe = iframe;
+        this.sandbox = new Sandbox(name, iframe.contentWindow);
+        // 处理入口文件
+        this.parseEntry();
+      });
+
+    } else {
+      this.sandbox = new Sandbox(name);
+      // 处理入口文件
+      this.parseEntry();
+    }
+
+
+  }
+
+  /**
+   * 创建iframe
+   */
+  createIframe(callback: () => void) {
+    const iframe = document.createElement('iframe');
+    document.body.appendChild(iframe);
+    // iframe.sandbox = '';
+    iframe.src = 'about:blank';
+    iframe.onload = callback
+    return iframe;
+  }
+
+  /**
+   * 运行在iframe运行的code
+   * @param code
+   */
+  runIframeCode(code: string) {
+    const iframe = this.iframe;
+    if (!iframe) return ;
+    const doc = iframe.contentDocument;
+    const script = doc.createElement('script');
+    script.text = code;
+    doc.body.appendChild(script);
   }
 
   /**
@@ -265,8 +306,12 @@ class ZMicroApp {
         });
       } else {
         const code = this.sandbox.bindScope(item.code);
-        /* eslint no-new-func: "off" */
-        Function(code)();
+        if (this.isSandbox) {
+          this.runIframeCode(code);
+        } else {
+          /* eslint no-new-func: "off" */
+          Function(code)();
+        }
         runScript();
       }
     };
@@ -357,6 +402,7 @@ class ZMicroApp {
    * 触发mount事件
    */
   emitMount() {
+    console.log('emit...')
     this.sandbox.sideEffect.evt.dispatch('mount');
   }
 

@@ -8,6 +8,12 @@ declare module '@zxj/micro' {
 
    type EventCallback = (data?: EventDataType) => void;
 
+   export interface BaseSandbox {
+      proxyWindow: ProxyWindow;
+      stop: () => void;
+      start: () => void;
+   }
+
    export interface MicroAppEvent {
       on: (type: string, callback?: EventCallback) => void;
       dispatch: (type: string, data?: DataType) => void;

@@ -1,8 +1,11 @@
+import type { BaseSandbox } from '@zxj/micro';
+
 /**
  * 基于Diff沙箱
  */
-class DiffSandbox {
+class DiffSandbox implements BaseSandbox {
   active: boolean;
+  proxyWindow: Window;
   modifyMap: {
     [name:string]: unknown
   };
@@ -13,12 +16,17 @@ class DiffSandbox {
     this.active = false;
     this.modifyMap = {}; // 存放修改的属性
     this.windowSnapshot = {}; // windows的快照
-    // this.proxyWindow = window;
+    this.proxyWindow = window;
   }
   start() {
     if (this.active) {
       return ;
     }
+    Object.assign(this.proxyWindow, {
+      proxyWindow: window,
+      proxyLocation: window.location,
+      proxyHistory: window.history
+    });
     this.active = true;
     // 缓存window对象上的属性
     this.windowSnapshot = {};
