@@ -1,5 +1,7 @@
 <template>
   <img alt="Vue logo" src="./assets/logo.png">
+  <router-link to="/wvue3/index">index</router-link>
+  <router-link to="/wvue3/user">user</router-link>
   <router-view />
 </template>
 

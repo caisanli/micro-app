@@ -1,13 +1,11 @@
 <template>
-    <div>
-        首页
-    </div>
+  <div>user</div>
 </template>
 
 <script>
-    export default {
-
-    }
+  export default {
+    name: 'UserPage'
+  }
 </script>
 
 <style lang="less" scoped>

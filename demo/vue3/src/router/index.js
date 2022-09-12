@@ -1,11 +1,15 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
-    history: createWebHashHistory(),
+    history: createWebHistory(),
     routes: [{
-      path: '/vue3/*',
+      path: '/wvue3/index',
       name: 'index',
       component: () => import('@/views/index.vue')
+    },{
+      path: '/wvue3/user',
+      name: 'user',
+      component: () => import('@/views/user.vue')
     }]
 })
 
