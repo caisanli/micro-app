@@ -25,7 +25,8 @@ class DiffSandbox implements BaseSandbox {
     Object.assign(this.proxyWindow, {
       proxyWindow: window,
       proxyLocation: window.location,
-      proxyHistory: window.history
+      proxyHistory: window.history,
+      proxyDocument: window.document
     });
     this.active = true;
     // 缓存window对象上的属性

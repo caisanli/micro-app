@@ -5,17 +5,19 @@ import DiffSandbox from './diff';
 import SideEffect from './sideEffect';
 import IframeProxy from './proxy';
 import type { BaseSandbox } from '@zxj/micro';
+import type ZMicroApp from '../app';
+
 class Sandbox {
   id: string;
   name: string;
   sideEffect: SideEffect;
   sandbox: BaseSandbox;
   active: boolean;
-  constructor(name: string, iframeWindow?: Window) {
-    this.id = '_zxj_micro_' + name;
-    this.name = name;
+  constructor(app: ZMicroApp, iframeWindow?: Window) {
+    this.id = '_zxj_micro_' + app.name;
+    this.name = app.name;
     if (iframeWindow !== undefined) {
-      this.sandbox = new IframeProxy(iframeWindow);
+      this.sandbox = new IframeProxy(app, iframeWindow);
     } else {
       this.sandbox = new DiffSandbox();
     }
@@ -26,7 +28,7 @@ class Sandbox {
   }
   // 修改js作用域
   bindScope(code: string) {
-    return `(function(window, self, global, globalThis, location, history) {
+    return `(function(window, self, global, globalThis, location, history, document) {
               ${code}\n
              }).bind(window.proxyWindow)(
                 window.proxyWindow,
@@ -34,7 +36,8 @@ class Sandbox {
                 window.proxyWindow, 
                 window.proxyWindow, 
                 window.proxyLocation,
-                window.proxyHistory
+                window.proxyHistory,
+                window.proxyDocument
              )`;
   }
   // 开启沙箱

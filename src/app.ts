@@ -220,13 +220,13 @@ class ZMicroApp {
       // 先暂时这样处理
       const iframe = this.createIframe(() => {
         this.iframe = iframe;
-        this.sandbox = new Sandbox(name, iframe.contentWindow);
+        this.sandbox = new Sandbox(this, iframe.contentWindow);
         // 处理入口文件
         this.parseEntry();
       });
 
     } else {
-      this.sandbox = new Sandbox(name);
+      this.sandbox = new Sandbox(this);
       // 处理入口文件
       this.parseEntry();
     }
@@ -240,8 +240,7 @@ class ZMicroApp {
   createIframe(callback: () => void) {
     const iframe = document.createElement('iframe');
     document.body.appendChild(iframe);
-    // iframe.sandbox = '';
-    iframe.src = 'about:blank';
+    iframe.src = this.origin + '/iframe.html';
     iframe.onload = callback
     return iframe;
   }
