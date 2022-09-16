@@ -48,8 +48,6 @@ class ZMicroApp {
   blobUrls: string[] = [];
   // 沙箱
   sandbox: Sandbox | null; // = new Sandbox(name);
-  // iframe 实例
-  iframe?: HTMLIFrameElement;
   // 子系统添加的元素
   addNodes: Node[] = [];
 
@@ -216,46 +214,12 @@ class ZMicroApp {
     this.externalLinks = _options.externalLinks || [];
 
     if (this.isSandbox) {
-      // TODO 还是需要优化一下 预加载iframe
-      // 先暂时这样处理
-      const iframe = this.createIframe(() => {
-        this.iframe = iframe;
-        this.sandbox = new Sandbox(this, iframe.contentWindow);
-        // 处理入口文件
-        this.parseEntry();
-      });
-
+      this.sandbox = new Sandbox(this);
     } else {
       this.sandbox = new Sandbox(this);
-      // 处理入口文件
-      this.parseEntry();
     }
-
-
-  }
-
-  /**
-   * 创建iframe
-   */
-  createIframe(callback: () => void) {
-    const iframe = document.createElement('iframe');
-    document.body.appendChild(iframe);
-    iframe.src = this.origin + '/iframe.html';
-    iframe.onload = callback
-    return iframe;
-  }
-
-  /**
-   * 运行在iframe运行的code
-   * @param code
-   */
-  runIframeCode(code: string) {
-    const iframe = this.iframe;
-    if (!iframe) return ;
-    const doc = iframe.contentDocument;
-    const script = doc.createElement('script');
-    script.text = code;
-    doc.body.appendChild(script);
+    // 处理入口文件
+    this.parseEntry();
   }
 
   /**
@@ -305,12 +269,7 @@ class ZMicroApp {
         });
       } else {
         const code = this.sandbox.bindScope(item.code);
-        if (this.isSandbox) {
-          this.runIframeCode(code);
-        } else {
-          /* eslint no-new-func: "off" */
-          Function(code)();
-        }
+        Function(code)();
         runScript();
       }
     };

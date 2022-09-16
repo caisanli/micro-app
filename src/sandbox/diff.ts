@@ -1,32 +1,39 @@
 import type { BaseSandbox } from '@zxj/micro';
-
+import { rawWindow, rawDocument } from '../utils/common';
 /**
  * 基于Diff沙箱
  */
 class DiffSandbox implements BaseSandbox {
+
   active: boolean;
+
   proxyWindow: Window;
-  modifyMap: {
+
+  private modifyMap: {
     [name:string]: unknown
   };
-  windowSnapshot: {
+
+  private windowSnapshot: {
     [name:string]: unknown
   };
-  constructor() {
+
+  private readonly rewriteName: string;
+
+  constructor(rewriteName: string) {
     this.active = false;
+    this.rewriteName = rewriteName;
     this.modifyMap = {}; // 存放修改的属性
     this.windowSnapshot = {}; // windows的快照
-    this.proxyWindow = window;
+    this.proxyWindow = rawWindow;
   }
+
   start() {
     if (this.active) {
       return ;
     }
     Object.assign(this.proxyWindow, {
-      proxyWindow: window,
-      proxyLocation: window.location,
-      proxyHistory: window.history,
-      proxyDocument: window.document
+      [this.rewriteName + '_window']: rawWindow,
+      [this.rewriteName + '_document']: rawDocument
     });
     this.active = true;
     // 缓存window对象上的属性
@@ -40,19 +47,20 @@ class DiffSandbox implements BaseSandbox {
     //   window[p] = this.modifyMap[p]
     // })
   }
+
   stop() {
     if (!this.active) {
       return ;
     }
     this.active = false;
     // 还原window的属性
-    for (const item in window) {
-      if (this.windowSnapshot[item] !== window[item]) {
+    for (const item in rawWindow) {
+      if (this.windowSnapshot[item] !== rawWindow[item]) {
         // 记录变更
         // this.modifyMap[item] = window[item]
         // 还原window
         if(item === '0') continue;
-        window[item] = <Window>this.windowSnapshot[item];
+        rawWindow[item] = <Window>this.windowSnapshot[item];
       }
     }
   }

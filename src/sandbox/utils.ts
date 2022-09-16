@@ -83,3 +83,9 @@ export function getTargetValue(target: any, p: any): any {
   return value;
 }
 
+// Array deduplication
+export function unique (array: any[]): any[] {
+  return array.filter(function (this: Record<PropertyKey, boolean>, item) {
+    return item in this ? false : (this[item] = true);
+  }, Object.create(null));
+}

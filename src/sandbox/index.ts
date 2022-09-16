@@ -13,40 +13,31 @@ class Sandbox {
   sideEffect: SideEffect;
   sandbox: BaseSandbox;
   active: boolean;
-  constructor(app: ZMicroApp, iframeWindow?: Window) {
+  constructor(app: ZMicroApp) {
     this.id = '_zxj_micro_' + app.name;
     this.name = app.name;
-    if (iframeWindow !== undefined) {
-      this.sandbox = new IframeProxy(app, iframeWindow);
+    if (app.isSandbox) {
+      this.sandbox = new IframeProxy(app, this.id);
     } else {
-      this.sandbox = new DiffSandbox();
+      this.sandbox = new DiffSandbox(this.id);
     }
     // 副作用处理
-    this.sideEffect = new SideEffect(this.sandbox.proxyWindow);
+    this.sideEffect = new SideEffect(this.sandbox.proxyWindow, app.name);
 
     this.active = false;
   }
   // 修改js作用域
   bindScope(code: string) {
-    return `(function(window, self, global, globalThis, location, history, document) {
-              ${code}\n
-             }).bind(window.proxyWindow)(
-                window.proxyWindow,
-                window.proxyWindow, 
-                window.proxyWindow, 
-                window.proxyWindow, 
-                window.proxyLocation,
-                window.proxyHistory,
-                window.proxyDocument
-             )`;
+    const name = this.id;
+    return `(function(window, document) {
+         ${code}\n
+       }).call(window['${ name }_window'], window['${ name }_window'], window['${ name }_document'])`;
   }
   // 开启沙箱
   start() {
     if (this.active) return;
     this.active = true;
     // 每个子系统独有副作用处理
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
     window[this.id] = this.sideEffect;
     // 先启副作用
     this.sideEffect.start();
@@ -63,7 +54,7 @@ class Sandbox {
     // 先停止沙箱
     this.sandbox.stop();
     // 再清副作用
-    this.sideEffect.clear();
+    this.sideEffect.stop();
   }
 }
 

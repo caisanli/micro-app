@@ -3,75 +3,50 @@
  */
 import type { BaseSandbox } from '@zxj/micro';
 import type ZMicroApp from '../app';
-import { documentProxyProperties } from './common';
-import { getTargetValue } from './utils';
+import {
+  documentProxyProperties,
+  rawDefineProperty,
+  rawDocument,
+  rawHasOwnProperty,
+  rawWindow
+} from '../utils/common';
+import { getTargetValue, unique } from './utils';
 
 class IframeProxy implements BaseSandbox {
 
   proxyWindow: Window;
 
-  proxy: typeof Proxy;
+  private isActive: boolean;
 
-  isActive: boolean;
+  // Properties newly added to microAppWindow
+  private injectedKeys = new Set<PropertyKey>();
+
+  private readonly rewriteName: string;
 
   /**
    * 构造函数
    * @param app 应用实例
-   * @param iframeWindow iframe的contentWindow
+   * @param rewriteName
    */
-  constructor(app: ZMicroApp, iframeWindow: Window) {
-    this.init(app, iframeWindow);
+  constructor(app: ZMicroApp, rewriteName: string) {
+    this.rewriteName = rewriteName;
+    this.init(app);
   }
 
-  init(app: ZMicroApp, iframeWindow: Window) {
-    // const
-    const proxyWindow = new Proxy(iframeWindow, {
-      get(target, key) {
-        console.log('proxyWindow get：', key);
-        console.log(key);
-        const value = Reflect.get(target, key);
-        if (key === 'location' || key === 'history') {
-          return window[key];
-        }
-        // console.log('value：', value);
-        if (typeof value === 'function' && /^[a-z]/.test(key as string) ){
-          return value.bind && value.bind(target);
-        } else {
-          return value;
-        }
-      },
-      set(target, key, value) {
-        // console.log('proxy set');
-        // console.log(key);
-        Reflect.set(target, key, value);
-        return true;
-      }
-    });
+  init(app: ZMicroApp) {
+    const proxyWindow = this.createProxyWindow() as Window;
+    rawWindow[this.rewriteName + '_document'] = this.createProxyDocument(app);
+    rawWindow[this.rewriteName + '_window'] = proxyWindow;
+    this.proxyWindow = proxyWindow;
+  }
 
-    const proxyDocument = new Proxy({}, {
+  /**
+   * 代理 rawDocument
+   */
+  createProxyDocument(app: ZMicroApp) {
+    return new Proxy(rawDocument, {
       get(target, propKey) {
-        console.log('proxyDocument get：', propKey);
-        const value = Reflect.get(target, propKey);
-        // if (key === 'querySelector') {
-        //   return app.shadowEl[key].bind(app.shadowEl);
-        // } else  if (key === 'head') {
-        //   return app.shadowEl;
-        // }
-        // // console.log('value：', value);
-        // if (typeof value === 'function' && /^[a-z]/.test(key as string) ){
-        //   return value.bind && value.bind(target);
-        // } else {
-        //   return value;
-        // }
-
-        const document = window.document;
         const shadowRoot = app.shadowEl;
-        const iframe = app.iframe;
-
-        // if (propKey === 'documentURI' || propKey === 'URL') {
-        //   return (iframe.contentWindow.__WUJIE.proxyLocation as Location).href;
-        // }
-
         // from shadowRoot
         if (
           propKey === 'getElementsByTagName' ||
@@ -81,18 +56,13 @@ class IframeProxy implements BaseSandbox {
           return new Proxy(shadowRoot.querySelectorAll, {
             apply(querySelectorAll, _ctx, args) {
               let arg = args[0];
-              console.log('getElementsByTagName arg：', arg);
               if (propKey === 'getElementsByTagName') {
-                if (arg === 'script') {
-                  console.log('iframe.contentDocument.scripts：', iframe.contentDocument.scripts, arg);
-                  return iframe.contentDocument.scripts;
-                } else if (documentProxyProperties.ownerProperties.includes(arg)) {
-                  console.log('是ownerProperties', shadowRoot.appendChild);
+                if (documentProxyProperties.ownerProperties.includes(arg)) {
                   return shadowRoot;
                 }
               }
               if (propKey === 'getElementsByClassName') arg = '.' + arg;
-              if (propKey === 'getElementsByName') arg = `[name="${arg}"]`;
+              if (propKey === 'getElementsByName') arg = `[name="${ arg }"]`;
               return querySelectorAll.call(shadowRoot, arg);
             },
           });
@@ -100,7 +70,7 @@ class IframeProxy implements BaseSandbox {
         if (propKey === 'getElementById') {
           return new Proxy(shadowRoot.querySelector, {
             apply(querySelector, _ctx, args) {
-              return querySelector.call(shadowRoot, `[id="${args[0]}"]`);
+              return querySelector.call(shadowRoot, `[id="${ args[0] }"]`);
             },
           });
         }
@@ -115,14 +85,16 @@ class IframeProxy implements BaseSandbox {
           return shadowRoot.querySelectorAll('img');
         if (propKey === 'links')
           return shadowRoot.querySelectorAll('a');
-        const { ownerProperties, shadowProperties, shadowMethods, documentProperties, documentMethods } =
+
+        const {ownerProperties, shadowProperties, shadowMethods} =
           documentProxyProperties;
+
         if (ownerProperties.concat(shadowProperties).includes(propKey.toString())) {
           if (propKey === 'activeElement' && 'activeElement' in shadowRoot && shadowRoot.activeElement === null) {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             return shadowRoot;
-          } else if(ownerProperties.includes(propKey.toString())) {
+          } else if (ownerProperties.includes(propKey.toString())) {
             return shadowRoot;
           } else {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -131,44 +103,128 @@ class IframeProxy implements BaseSandbox {
           }
         }
         if (shadowMethods.includes(propKey.toString())) {
-          return getTargetValue(shadowRoot, propKey) ?? getTargetValue(document, propKey);
+          return getTargetValue(shadowRoot, propKey) ?? getTargetValue(target, propKey);
         }
-        // from window.document
-        if (documentProperties.includes(propKey.toString())) {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          return document[propKey];
-        }
-        if (documentMethods.includes(propKey.toString())) {
-          return getTargetValue(document, propKey);
-        }
-
+        return getTargetValue(target, propKey);
       },
       set(target, key, value) {
-        console.log('proxy set：', key, value);
         return Reflect.set(target, key, value);
       }
     });
-    iframeWindow['proxyDocument'] = proxyDocument;
-    iframeWindow['proxyWindow'] = proxyWindow;
-    iframeWindow['proxyLocation'] = window.location;
-    iframeWindow['proxyHistory'] = window.history;
-    this.proxyWindow = proxyWindow;
+  }
+
+  /**
+   * 创建 window 代理
+   */
+  createProxyWindow() {
+    const descriptorTargetMap = new Map<PropertyKey, 'target' | 'rawWindow'>();
+
+    return new Proxy({}, {
+      get: (target, key) => {
+        // console.log('proxy get', key);
+        if (key === '_zxj_is_micro') {
+          return true;
+        }
+        // const has = Reflect.has(target, key);
+        // console.log('proxy get', key, value);
+        if (Reflect.has(target, key)) {
+          return Reflect.get(target, key);
+        }
+        const newVal = getTargetValue(rawWindow, key);
+        // console.log('proxy get', key, newVal);
+        return newVal;
+      },
+      set: (target, key, value) => {
+        if (!this.isActive) {
+          return true;
+        }
+        //
+        // console.log('proxy set', key, value);
+
+        if (
+          // target.hasOwnProperty has been rewritten
+          !rawHasOwnProperty.call(target, key) &&
+          rawHasOwnProperty.call(rawWindow, key)
+        ) {
+          const descriptor = Object.getOwnPropertyDescriptor(rawWindow, key);
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          const {configurable, enumerable, writable, set} = descriptor!;
+          // set value because it can be set
+          rawDefineProperty(target, key, {
+            value,
+            configurable,
+            enumerable,
+            writable: writable ?? !!set,
+          });
+
+          this.injectedKeys.add(key);
+        } else {
+          Reflect.set(target, key, value);
+          this.injectedKeys.add(key);
+        }
+        return true;
+      },
+      has: (target, key) => {
+        return key in target || key in rawWindow;
+      },
+      getOwnPropertyDescriptor: (target, key) => {
+        if (rawHasOwnProperty.call(target, key)) {
+          descriptorTargetMap.set(key, 'target');
+          return Object.getOwnPropertyDescriptor(target, key);
+        }
+        if (rawHasOwnProperty.call(rawWindow, key)) {
+          descriptorTargetMap.set(key, 'rawWindow');
+          const descriptor = Object.getOwnPropertyDescriptor(rawWindow, key);
+          if (descriptor && !descriptor.configurable) {
+            descriptor.configurable = true;
+          }
+          return descriptor;
+        }
+
+        return undefined;
+      },
+      // Object.defineProperty(window, key, Descriptor)
+      defineProperty: (target, key, value): boolean => {
+        const from = descriptorTargetMap.get(key);
+        if (from === 'rawWindow') {
+          return Reflect.defineProperty(rawWindow, key, value);
+        }
+        return Reflect.defineProperty(target, key, value);
+      },
+      // Object.getOwnPropertyNames(window)
+      ownKeys: (target): Array<string | symbol> => {
+        return unique(Reflect.ownKeys(rawWindow).concat(Reflect.ownKeys(target)));
+      },
+      deleteProperty: (target, key): boolean => {
+        if (rawHasOwnProperty.call(target, key)) {
+          this.injectedKeys.has(key) && this.injectedKeys.delete(key);
+          // this.escapeKeys.has(key) && Reflect.deleteProperty(rawWindow, key)
+          return Reflect.deleteProperty(target, key);
+        }
+        return true;
+      },
+    });
   }
 
   start() {
     if (this.isActive) {
-      return ;
+      return;
     }
     this.isActive = true;
   }
 
-  stop() {
+  stop(umdMode?: boolean) {
     if (!this.isActive) {
-      return ;
+      return;
     }
+    if (!umdMode) {
+      this.injectedKeys.forEach((key: PropertyKey) => {
+        Reflect.deleteProperty(this.proxyWindow, key);
+      });
+      this.injectedKeys.clear();
+    }
+
     this.isActive = false;
-    console.log('stop');
   }
 }
 
