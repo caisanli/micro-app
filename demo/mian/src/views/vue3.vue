@@ -1,6 +1,9 @@
 /* eslint-disable */
 <template>
-  <micro-app name="vue3" url="/vue3" sandbox />
+  <div>
+    <micro-app name="vue3" url="/vue3" sandbox />
+    <micro-app name="vue2" url="/vue2" sandbox />
+  </div>
 </template>
 
 <script>

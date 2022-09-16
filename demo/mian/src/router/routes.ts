@@ -9,7 +9,7 @@ export default [{
     component: () => import('@/views/vue2.vue')
   }, {
     name: 'vue3',
-    path: '/wvue3',
+    path: '/wvue3/*',
     component: () => import('@/views/vue3.vue')
   }, {
     name: 'vue3-ts',

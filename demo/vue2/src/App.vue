@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div id="vue2">
     <h1>子应用</h1>
     <ul>
         <li><router-link to="/vue2/index">首页</router-link></li>
@@ -14,7 +14,7 @@
 export default {
   name: 'App',
   components: {
-      
+
   },
   mounted() {
     // document.body.addEventListener('click', function() {
