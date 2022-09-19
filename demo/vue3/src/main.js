@@ -14,6 +14,12 @@ function createAppFunc() {
 if (window._zxj_is_micro) {
   const microApp = window['_zxj_micro_vue3'];
   let app;
+  microApp.evt.on('message', (data) => {
+    alert('vue3收到消息：' + JSON.stringify(data));
+  })
+  microApp.evt.on('child', (data) => {
+    alert('看能不能收到：' + JSON.stringify(data));
+  })
   microApp.evt.on('mount', () => {
     console.log('vue3 mount...');
     app = createAppFunc();

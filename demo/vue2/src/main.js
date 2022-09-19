@@ -17,6 +17,9 @@ function createAppFunc() {
 if (window._zxj_is_micro) {
   const microApp = window['_zxj_micro_vue2'];
   let app;
+  microApp.evt.on('message', (data) => {
+    alert('vue2收到消息：' + JSON.stringify(data));
+  })
   microApp.evt.on('mount', () => {
     console.log('vue2 mount...');
     app = createAppFunc();
