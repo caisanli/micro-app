@@ -81,7 +81,7 @@ class SideEffect {
     // 事件处理器
     const prefix = `${this.name}-`;
     // 向事件中心注册子系统
-    eventInstance.addChild(this.name);
+    eventInstance.addChild(prefix);
     // 每个事件名称前加上前缀
     // 保证子系统之间事件不冲突
     this.evt = {
