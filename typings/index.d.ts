@@ -21,7 +21,7 @@ declare module '@zxj/micro' {
       clear: () => void;
    }
 
-   export type MicroAppStatus = 'init' | 'mount' | 'unmount';
+   export type MicroAppStatus = 'init' | 'preloading' | 'preloaded' | 'mount' | 'unmount';
 
    export type ScriptItem = {
       type: string;
@@ -45,7 +45,8 @@ declare module '@zxj/micro' {
       disableStyleSandbox?: boolean;
       externalLinks?: string[];
       module?: boolean;
-      sandbox?: boolean
+      sandbox?: boolean;
+      preload?: boolean;
    }
 
    /**
@@ -58,6 +59,8 @@ declare module '@zxj/micro' {
    export interface MicroAppSideEffect {
       evt: MicroAppEvent
    }
+
+   export type setPreload = (apps: MircoAppOptions | MircoAppOptions[]) => void;
 
    export type MicroApp = Component
 

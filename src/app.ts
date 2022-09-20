@@ -47,12 +47,42 @@ class ZMicroApp {
   // 缓存blob地址
   blobUrls: string[] = [];
   // 沙箱
-  sandbox: Sandbox | null; // = new Sandbox(name);
+  sandbox: Sandbox; // = new Sandbox(name);
   // 子系统添加的元素
   addNodes: Node[] = [];
+  // 预加载完后，须立即执行
+  preloadedNeedImplement: boolean = false;
 
-  constructor() {
-    console.log('初始化')
+  constructor(options: MircoAppOptions) {
+    const defaultOpt: MircoAppOptions = {
+      url: '',
+      name: '',
+      module: false,
+      sandbox: false,
+      disableStyleSandbox: true,
+      preload: false,
+      externalLinks: []
+    };
+    const _options = Object.assign(defaultOpt, options);
+    const name = _options.name;
+    if (_options.preload) {
+      this.status = 'preloading';
+    }
+    this.name = name;
+    this.url = getUrl(_options.url);
+    this.origin = getUrlOrigin(this.url);
+    this.scopedName = 'zxj_micro_' + name;
+    this.isSandbox = _options.sandbox ? isSupportShadowDom() : false;
+    this.module = _options.module || !isProd;
+    this.externalLinks = _options.externalLinks || [];
+
+    if (this.isSandbox) {
+      this.sandbox = new Sandbox(this);
+    } else {
+      this.sandbox = new Sandbox(this);
+    }
+    // 处理入口文件
+    this.parseEntry();
   }
 
   /**
@@ -184,42 +214,19 @@ class ZMicroApp {
    * 所以计了数，2次后表示css、javascript资源都请求完毕，可以执行了
    */
   loadCode() {
-    if (++this.fetchCount >= 2) {
-      this.mount();
+    if (++this.fetchCount < 2) {
+      return ;
     }
-  }
-
-  /**
-   * 初始化
-   * @param options
-   */
-  init(options: MircoAppOptions) {
-    const defaultOpt: MircoAppOptions = {
-      url: '',
-      name: '',
-      module: false,
-      sandbox: false,
-      disableStyleSandbox: true,
-      externalLinks: []
-    };
-    const _options = Object.assign(defaultOpt, options);
-    const name = _options.name;
-    this.status = 'init';
-    this.name = name;
-    this.url = getUrl(_options.url);
-    this.origin = getUrlOrigin(this.url);
-    this.scopedName = 'zxj_micro_' + name;
-    this.isSandbox = _options.sandbox ? isSupportShadowDom() : false;
-    this.module = _options.module || !isProd;
-    this.externalLinks = _options.externalLinks || [];
-
-    if (this.isSandbox) {
-      this.sandbox = new Sandbox(this);
-    } else {
-      this.sandbox = new Sandbox(this);
+    // 如果是在预加载中
+    if (this.status === 'preloading') {
+      // 就设置为预加载完成
+      this.status = 'preloaded';
+      // 如果不需要立即执行就不执行
+      if (!this.preloadedNeedImplement) {
+        return ;
+      }
     }
-    // 处理入口文件
-    this.parseEntry();
+    this.mount();
   }
 
   /**
@@ -319,10 +326,19 @@ class ZMicroApp {
    * 挂载
    */
   mount() {
-    if (this.status === 'mount') {
-      return;
+    // 如果还在预加载中
+    if (this.status === 'preloading') {
+      // 就设置预加载完成后立即执行
+      this.preloadedNeedImplement = true;
+      return ;
     }
+    if (this.status === 'mount') {
+      return ;
+    }
+    // 上次的状态是否是 init
     const prevStatusIsInit = this.status === 'init';
+    // 上次状态是否是 preloaded
+    const prevStatusIsPreloaded = this.status === 'preloaded';
     this.status = 'mount';
     window._zxj_is_micro = true;
     if (!prevStatusIsInit) {
@@ -335,7 +351,11 @@ class ZMicroApp {
       try {
         // 执行样式代码
         this.execStyle();
-        if (!this.moduleCount || (prevStatusIsInit && this.moduleCount > 0)) {
+        if (
+          !this.moduleCount
+          || prevStatusIsPreloaded
+          || (prevStatusIsInit && this.moduleCount > 0)
+        ) {
           // 执行script代码
           this.execScript(this.scripts, () => {
             // 触发mount事件
@@ -360,7 +380,6 @@ class ZMicroApp {
    * 触发mount事件
    */
   emitMount() {
-    console.log('emit...')
     this.sandbox.sideEffect.evt.dispatch('mount');
   }
 
