@@ -22,7 +22,7 @@ const vitePlugin = (): Plugin => {
               const newPath = fullPath.href.replace(ORIGIN, '');
               return all.replace($3, newPath);
             });
-            const fullPath = join(options.dir, chunk.fileName);
+            const fullPath = join(options.dir || '', chunk.fileName);
             writeFileSync(fullPath, chunk.code);
           }
         }

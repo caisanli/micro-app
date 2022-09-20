@@ -12,7 +12,7 @@ const rawClearInterval = window.clearInterval;
  */
 class SideEffect {
   private proxyWindow: ProxyWindow;
-  private active: boolean;
+  private active = false;
   evt: Partial<MicroAppEvent>;
   private evtListenerTypes: {
     [name:string]: 1
@@ -20,11 +20,11 @@ class SideEffect {
   private listeners: {
     [eventType:string]: {
       listener: (this: Window, ev: any) => any;
-      options: boolean
+      options?: boolean
     }[]
   };
   private intervalTimers: number[];
-  private name: string;
+  private readonly name: string;
 
   constructor(proxyWindow: ProxyWindow, name: string) {
     // 代理的环境
@@ -62,7 +62,7 @@ class SideEffect {
     // 代理原生removeEventListener
     this.proxyWindow.removeEventListener = function(type: string, listener: (this: Window, ev: any) => any, options: boolean){
       const listeners = _this.listeners[type];
-      if (listeners && listener) {
+      if (listeners) {
         _this.listeners[type] = listeners.filter(item => listener !== item.listener);
       }
       rawRemoveEventListener.call(this, type, listener, options);

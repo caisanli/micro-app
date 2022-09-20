@@ -16,7 +16,7 @@ class IframeProxy implements BaseSandbox {
 
   proxyWindow: Window;
 
-  private isActive: boolean;
+  private active = false;
 
   // Properties newly added to microAppWindow
   private injectedKeys = new Set<PropertyKey>();
@@ -30,10 +30,6 @@ class IframeProxy implements BaseSandbox {
    */
   constructor(app: ZMicroApp, rewriteName: string) {
     this.rewriteName = rewriteName;
-    this.init(app);
-  }
-
-  init(app: ZMicroApp) {
     const proxyWindow = this.createProxyWindow() as Window;
     rawWindow[this.rewriteName + '_document'] = this.createProxyDocument(app);
     rawWindow[this.rewriteName + '_window'] = proxyWindow;
@@ -46,7 +42,7 @@ class IframeProxy implements BaseSandbox {
   createProxyDocument(app: ZMicroApp) {
     return new Proxy(rawDocument, {
       get(target, propKey) {
-        const shadowRoot = app.shadowEl;
+        const shadowRoot = app.shadowEl || rawDocument;
         // from shadowRoot
         if (
           propKey === 'getElementsByTagName' ||
@@ -135,7 +131,7 @@ class IframeProxy implements BaseSandbox {
         return newVal;
       },
       set: (target, key, value) => {
-        if (!this.isActive) {
+        if (!this.active) {
           return true;
         }
         //
@@ -207,14 +203,14 @@ class IframeProxy implements BaseSandbox {
   }
 
   start() {
-    if (this.isActive) {
+    if (this.active) {
       return;
     }
-    this.isActive = true;
+    this.active = true;
   }
 
   stop(umdMode?: boolean) {
-    if (!this.isActive) {
+    if (!this.active) {
       return;
     }
     if (!umdMode) {
@@ -224,7 +220,7 @@ class IframeProxy implements BaseSandbox {
       this.injectedKeys.clear();
     }
 
-    this.isActive = false;
+    this.active = false;
   }
 }
 

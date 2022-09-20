@@ -27,7 +27,7 @@ const GreetingProps = Vue.extend({
 @Component
 class MicroAppClass extends GreetingProps {
 
-  app: ZMicroApp;
+  app: ZMicroApp | null = null;
 
   mounted() {
     const { name, url, disableStyleSandbox, externalLinks, module, sandbox } = this;
@@ -38,9 +38,7 @@ class MicroAppClass extends GreetingProps {
       this.app = app;
       this.app.mount();
     } else { // 不存在实例，就初始化
-      this.app = new ZMicroApp();
-      cache[name] = this.app;
-      this.app.init({
+      this.app = new ZMicroApp({
         name,
         url,
         disableStyleSandbox,
@@ -48,18 +46,19 @@ class MicroAppClass extends GreetingProps {
         module,
         sandbox
       });
+      cache[name] = this.app;
     }
   }
 
   // 兼容vue3
   beforeUnmount() {
     // 取消挂载
-    this.app.unmount();
+    this.app && this.app.unmount();
   }
 
   beforeDestroy() {
     // 取消挂载
-    this.app.unmount();
+    this.app && this.app.unmount();
   }
 
   render(h: CreateElement):VNode {
