@@ -56,11 +56,15 @@ class DiffSandbox implements BaseSandbox {
     // 还原window的属性
     for (const item in rawWindow) {
       if (this.windowSnapshot[item] !== rawWindow[item]) {
-        // 记录变更
-        // this.modifyMap[item] = window[item]
-        // 还原window
-        if(item === '0') continue;
-        rawWindow[item] = <Window>this.windowSnapshot[item];
+        try {
+          // 记录变更
+          // this.modifyMap[item] = window[item]
+          // 还原window
+          if (item === '0') continue;
+          rawWindow[item] = <Window>this.windowSnapshot[item];
+        } catch (e) {
+          // console.log(e);
+        }
       }
     }
   }
