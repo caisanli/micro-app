@@ -37,8 +37,8 @@ function getStyle(app: ZMicroApp) {
       list.push(setRemoteCssScoped(item, app));
     } else {
       list.push({
-        code: item.code,
-        ...item
+        ...item,
+        code: item.code
       });
     }
   });
@@ -93,8 +93,8 @@ function getRemoteScript(item: ScriptItem) {
 function setRemoteCssScoped(item: LinkItem, app: ZMicroApp) {
   return fetchResource(item.href).then(css => {
     return {
+      ...item,
       code: setLocalCssScoped(css, app),
-      ...item
     };
   });
 }
