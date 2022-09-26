@@ -103,7 +103,9 @@ function setLocalCssScoped(css: string, app: ZMicroApp) {
   const style = document.createElement('style');
   style.textContent = css;
   document.body.appendChild(style);
-  style.sheet.disabled = true;
+  if (style.sheet) {
+    style.sheet.disabled = true;
+  }
   scopedCssStyle(style, app);
   document.body.removeChild(style);
   return style.textContent;
@@ -145,12 +147,12 @@ function recursionGetSource(element: HTMLElement, app: ZMicroApp) {
  */
 function parseScript(parentNode: HTMLElement, node: HTMLScriptElement, app: ZMicroApp) {
   const src = node.getAttribute('src');
-  const type = node.getAttribute('type');
+  const type = node.getAttribute('type') || '';
   const isModule = type === 'module'; // 是否是module
   const isNoModule = node.hasAttribute('nomodule');
   const supportModule = app.module && isSupportModule();
-  const id = node.getAttribute('id');
-  const dataSrc = node.getAttribute('data-src');
+  const id = node.getAttribute('id') || '';
+  const dataSrc = node.getAttribute('data-src') || '';
   // 如果 nomodule 属性存在且浏览器支持 script module，则不处理
   if(isNoModule && supportModule) {
     const comment = document.createComment(`当前子应用不需要支持 nomodule <script src="${src}" />${node.textContent}</script>`);
@@ -189,7 +191,7 @@ function parseScript(parentNode: HTMLElement, node: HTMLScriptElement, app: ZMic
     parentNode.insertBefore(comment, node);
     parentNode.removeChild(node);
   } else { // 内联脚本
-    scriptItem.code = node.textContent;
+    scriptItem.code = node.textContent || '';
     parentNode.removeChild(node);
   }
 
@@ -210,7 +212,7 @@ function parseScript(parentNode: HTMLElement, node: HTMLScriptElement, app: ZMic
 function parseLink(parentNode: HTMLStyleElement, node: HTMLStyleElement, app: ZMicroApp) {
   const externalLinks = app.externalLinks;
   const rel = node.getAttribute('rel');
-  const href = node.getAttribute('href');
+  const href = node.getAttribute('href') || '';
   const as = node.getAttribute('as');
   // const type = node.getAttribute('type');
   // 是否是外部链接，外部链接就不做处理
@@ -240,7 +242,7 @@ function parseLink(parentNode: HTMLStyleElement, node: HTMLStyleElement, app: ZM
  * @param {*} app 应用实例
  */
 function parseStyle(parentNode: HTMLStyleElement, node: HTMLStyleElement, app: ZMicroApp) {
-  node.textContent = setLocalCssScoped(node.textContent, app);
+  node.textContent = setLocalCssScoped(node.textContent || '', app);
 }
 
 /**
@@ -249,6 +251,9 @@ function parseStyle(parentNode: HTMLStyleElement, node: HTMLStyleElement, app: Z
  * @param app 应用实例
  */
 export function scopedCssStyle(node: HTMLStyleElement, app: ZMicroApp) {
+  if (!node.sheet) {
+    return ;
+  }
   const cssRules:CSSRuleList = node.sheet.cssRules;
   const styleList: string[] = [];
   parseCssRules(cssRules, styleList, app);
@@ -410,7 +415,9 @@ export function createScriptElement(app: ZMicroApp, item: ScriptItem, next: () =
     next();
   });
 
-  app.shadowEl.appendChild(scriptElem);
+  if (app.shadowEl) {
+    app.shadowEl.appendChild(scriptElem);
+  }
 
   // 空标签的script标签不用等加载完毕
   if (!scriptElem.src) {

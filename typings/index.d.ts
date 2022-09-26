@@ -17,7 +17,7 @@ declare module '@zxj/micro' {
    export interface MicroAppEvent {
       on: (type: string, callback?: EventCallback) => void;
       dispatch: (type: string, data?: DataType) => void;
-      off: (type?: string, callback?: EventCallback) => void;
+      off: (type: string, callback?: EventCallback) => void;
       clear: () => void;
    }
 

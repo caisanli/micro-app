@@ -1,10 +1,11 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck - may need to be at the start of file
 import eventInstance from './event';
 import { EventCallback, MicroAppEvent, ProxyWindow } from '@zxj/micro';
 const rawAddEventListener = window.addEventListener;
 const rawRemoveEventListener = window.removeEventListener;
 const rawSetInterval = window.setInterval;
 const rawClearInterval = window.clearInterval;
-
 /**
  * 子系统副作用处理
  * 原生addEventListener、removeEventListener、setInterval、clearInterval拦截代理
@@ -13,7 +14,7 @@ const rawClearInterval = window.clearInterval;
 class SideEffect {
   private proxyWindow: ProxyWindow;
   private active = false;
-  evt: Partial<MicroAppEvent>;
+  evt: MicroAppEvent;
   private evtListenerTypes: {
     [name:string]: 1
   };
@@ -30,7 +31,45 @@ class SideEffect {
     // 代理的环境
     this.proxyWindow = proxyWindow;
     // 自定义事件处理器
-    this.evt = {};
+    // 事件处理器
+    const prefix = `${name}-`;
+    // 向事件中心注册子系统
+    eventInstance.addChild(prefix);
+    // 每个事件名称前加上前缀
+    // 保证子系统之间事件不冲突
+    this.evt = {
+      on: (key, listener) => {
+        if (!this.active) {
+          return ;
+        }
+        const newKey = `${prefix}${key}`;
+        this.evtListenerTypes[newKey] = 1;
+        eventInstance.on(newKey, listener);
+      },
+      dispatch: (key: string, data?: unknown) => {
+        if (!this.active) {
+          return ;
+        }
+        const newKey = `${prefix}${key}`;
+        eventInstance.dispatch(newKey, data);
+      },
+      off: (key: string, callback?: EventCallback) => {
+        if (!this.active) {
+          return ;
+        }
+        const newKey = `${prefix}${key}`;
+        eventInstance.off(newKey, callback);
+      },
+      clear: () => {
+        if (!this.active) {
+          return ;
+        }
+        Object.keys(this.evtListenerTypes).forEach(key => {
+          eventInstance.off(key);
+        });
+        this.evtListenerTypes = {};
+      }
+    };
     // 记录绑定自定义事件
     this.evtListenerTypes = {};
     // 记录绑定事件
@@ -39,6 +78,7 @@ class SideEffect {
     this.intervalTimers = [];
     this.name = name;
   }
+
   start() {
     if (this.active) {
       return ;
@@ -78,33 +118,7 @@ class SideEffect {
       _this.intervalTimers = _this.intervalTimers.filter(id => id !== intervalID);
       return rawClearInterval.call(this, intervalID);
     };
-    // 事件处理器
-    const prefix = `${this.name}-`;
-    // 向事件中心注册子系统
-    eventInstance.addChild(prefix);
-    // 每个事件名称前加上前缀
-    // 保证子系统之间事件不冲突
-    this.evt = {
-      on: (key, listener) => {
-        const newKey = `${prefix}${key}`;
-        this.evtListenerTypes[newKey] = 1;
-        eventInstance.on(newKey, listener);
-      },
-      dispatch: (key: string, data?: unknown) => {
-        const newKey = `${prefix}${key}`;
-        eventInstance.dispatch(newKey, data);
-      },
-      off: (key: string, callback?: EventCallback) => {
-        const newKey = `${prefix}${key}`;
-        eventInstance.off(newKey, callback);
-      },
-      clear: () => {
-        Object.keys(this.evtListenerTypes).forEach(key => {
-          eventInstance.off(key);
-        });
-        this.evtListenerTypes = {};
-      }
-    };
+
   }
   /**
      * 清空代理事件及自定义事件

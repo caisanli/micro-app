@@ -37,7 +37,7 @@ class Event {
    * @param {*} callback 事件回调
    * @returns
    */
-  on(name: string, callback: EventCallback) {
+  on(name: string, callback?: EventCallback) {
     if (!name || typeof callback !== 'function')
       return;
 
