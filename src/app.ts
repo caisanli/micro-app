@@ -75,12 +75,7 @@ class ZMicroApp {
     this.isSandbox = _options.sandbox ? isSupportShadowDom() : false;
     this.module = _options.module || !isProd;
     this.externalLinks = _options.externalLinks || [];
-
-    if (this.isSandbox) {
-      this.sandbox = new Sandbox(this);
-    } else {
-      this.sandbox = new Sandbox(this);
-    }
+    this.sandbox = new Sandbox(this);
     // 处理入口文件
     this.parseEntry();
   }

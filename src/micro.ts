@@ -2,7 +2,7 @@
  * 创建Vue MicroApp组件
  */
 import ZMicroApp from './app';
-import cache from './utils/cache';
+import cache, { global } from './utils/cache';
 import Vue from 'vue';
 import type { CreateElement, VNode } from 'vue';
 import Component from 'vue-class-component';
@@ -24,14 +24,32 @@ const GreetingProps = Vue.extend({
   }
 });
 
+const NEED_UPDATE_SOURCE_MSG = 'Uncaught SyntaxError: Unexpected token \'<\'';
+
 @Component
 class MicroAppClass extends GreetingProps {
 
   app: ZMicroApp | null = null;
 
+  bindGlobalEvent() {
+    if (global.isBindGlobalEvent) return;
+    global.isBindGlobalEvent = true;
+    // 监听错误事件
+    window.addEventListener('error', (e) => {
+      if (e && e.message === NEED_UPDATE_SOURCE_MSG) {
+        console.error(`执行 ${ e.filename } JavaScript文件失败，可能是文件地址发生了变化，需要重新刷新浏览器。`);
+        const is = confirm('当前系统代码有更新，请刷新页面');
+        if (is) {
+          window.location.reload();
+        }
+      }
+    });
+  }
+
   mounted() {
     const { name, url, disableStyleSandbox, externalLinks, module, sandbox } = this;
     if(!name || !url) return ;
+    this.bindGlobalEvent();
     // 从缓存中取子系统实例
     const app = cache[name];
     if (app) { // 存在实例，就挂载

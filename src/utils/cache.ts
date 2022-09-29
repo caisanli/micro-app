@@ -8,3 +8,7 @@ const cache: {
 } = {};
 
 export default cache;
+
+export const global = {
+  isBindGlobalEvent: false
+};
