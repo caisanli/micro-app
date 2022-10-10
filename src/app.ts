@@ -122,9 +122,6 @@ class ZMicroApp {
         }
         Array.from(mutation.addedNodes).forEach((node, index) => {
           const nodeName = node.nodeName;
-          if (nodeName !== 'STYLE' && nodeName !== 'SCRIPT') {
-            return;
-          }
           const id = Math.round((Math.random() * 1000)) + '-' + index + '-' + Date.now();
           (node as HTMLElement).id = id;
           switch (nodeName) {
@@ -135,11 +132,10 @@ class ZMicroApp {
               }
               break;
             }
-            case 'SCRIPT':
+            default:
               this.headAddStyleIds.push(id);
               break;
           }
-
         });
       });
     };

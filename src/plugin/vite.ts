@@ -16,7 +16,7 @@ const vitePlugin = (): Plugin => {
         if (Object.prototype.hasOwnProperty.call(bundle, chunkName)) {
           const chunk = bundle[chunkName] as OutputChunk;
           if (chunk.fileName && chunk.fileName.lastIndexOf('.js') > -1) {
-            const ORIGIN = 'http://192.168.0.103:80';
+            const ORIGIN = 'http://192.168.0.103:83';
             chunk.code = chunk.code.replace(/(from|import\()(\s*['"])(\.\.?\/)/g, (all, $1, $2, $3) => {
               const fullPath = new URL($3, ORIGIN + basePath);
               const newPath = fullPath.href.replace(ORIGIN, '');
