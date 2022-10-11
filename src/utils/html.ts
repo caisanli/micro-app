@@ -261,6 +261,28 @@ export function scopedCssStyle(node: HTMLStyleElement, app: ZMicroApp) {
 }
 
 /**
+ * 设置link标签的样式作用域
+ * @param linkHrefList
+ * @param app
+ */
+export function scopedCssLink(linkHrefList: string[], app: ZMicroApp) {
+  const result: Promise<string>[] = [];
+  linkHrefList.forEach(href => {
+    result.push(fetchResource(href));
+  });
+
+  Promise.all(result).then(res => {
+    res.forEach(text => {
+      const style = document.createElement('style');
+      style.setAttribute('data-micro', app.name);
+      style.textContent = text;
+      style.disabled = true;
+      document.head.appendChild(style);
+    });
+  });
+}
+
+/**
  * 解析样式规则并添加作用域前缀
  * @param {*} cssRules 样式规则
  * @param {*} styleList 存储样式列表

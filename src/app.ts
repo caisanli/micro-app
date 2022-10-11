@@ -1,6 +1,6 @@
 /* eslint-disable */
 import { fetchResource, getUrlOrigin, getUrl, isAsyncScript, isViteLegacyEntry, isSupportShadowDom } from './utils';
-import { parseHtml, scopedCssStyle, createScriptElement, isProd } from './utils/html';
+import { parseHtml, scopedCssStyle, createScriptElement, isProd, scopedCssLink } from './utils/html';
 import Sandbox from './sandbox/index';
 // @ts-ignore
 import _JsMutationObserver from './utils/MutationObserver';
@@ -75,6 +75,7 @@ class ZMicroApp {
     this.isSandbox = _options.sandbox ? isSupportShadowDom() : false;
     this.module = _options.module || !isProd;
     this.externalLinks = _options.externalLinks || [];
+    this.disableStyleSandbox = _options.disableStyleSandbox;
     this.sandbox = new Sandbox(this);
     // 处理入口文件
     this.parseEntry();
@@ -113,6 +114,7 @@ class ZMicroApp {
     const config = {attributes: false, childList: true, subtree: false};
     const disableStyleSandbox = this.disableStyleSandbox;
     const callback = (mutationsList: MutationRecord[]) => {
+      const linkHrefList: string[] = [];
       [...mutationsList].forEach(mutation => {
         if (mutation.type !== 'childList') {
           return;
@@ -124,6 +126,7 @@ class ZMicroApp {
           const nodeName = node.nodeName;
           const id = Math.round((Math.random() * 1000)) + '-' + index + '-' + Date.now();
           (node as HTMLElement).id = id;
+          this.headAddStyleIds.push(id);
           switch (nodeName) {
             case 'STYLE': {
               this.headAddStyleIds.push(id);
@@ -132,12 +135,25 @@ class ZMicroApp {
               }
               break;
             }
-            default:
-              this.headAddStyleIds.push(id);
+            case 'LINK': {
+              if (disableStyleSandbox !== true && (node as HTMLLinkElement).rel === 'stylesheet') {
+                linkHrefList.push((node as HTMLLinkElement).href);
+              }
               break;
+            }
           }
         });
       });
+
+      setTimeout(() => {
+        for (let i = 0; i < document.styleSheets.length; i++) {
+          const styleSheet = document.styleSheets[i];
+          if (styleSheet.href && linkHrefList.includes(styleSheet.href)) {
+            styleSheet.disabled = true;
+          }
+        }
+        scopedCssLink(linkHrefList, this);
+      }, 0);
     };
     if (head) {
       // @ts-ignore
