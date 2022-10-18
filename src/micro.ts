@@ -36,25 +36,31 @@ class MicroAppClass extends GreetingProps {
     global.isBindGlobalEvent = true;
     // 监听错误事件
     window.addEventListener('error', (e) => {
+      console.log('window error：', e);
       if (!e) return ;
       if (e.message === NEED_UPDATE_SOURCE_MSG) {
         console.error(`执行 ${ e.filename } JavaScript文件失败，可能是文件地址发生了变化，需要重新刷新浏览器。`);
         confirmReload();
       } else if(
         e.message === undefined
-        && (e.target as HTMLElement).nodeName === 'SCRIPT'
-        && (e.target as HTMLScriptElement).type === 'module'
+        && (
+          (e.target as HTMLElement).tagName === 'SCRIPT' && (e.target as HTMLScriptElement).type === 'module'
+          || (e.target as HTMLElement).tagName === 'LINK' && (e.target as HTMLLinkElement).rel === 'modulepreload'
+        )
       ) {
-        console.error(`执行 ${ (e.target as HTMLScriptElement).src } ESMODULE 失败，可能是文件地址发生了变化，需要重新刷新浏览器。`);
+        console.error(`获取 ${ (e.target as HTMLScriptElement).src } ESMODULE 失败，可能是文件地址发生了变化，需要重新刷新浏览器。`);
         confirmReload();
       }
     }, true);
-
+    let isConfirm = false;
     function confirmReload() {
+      if (isConfirm) return;
+      isConfirm = true;
       const is = confirm('当前系统代码有更新，请刷新页面');
       if (is) {
         window.location.reload();
       }
+      isConfirm = false;
     }
   }
 
