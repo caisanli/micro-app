@@ -52,15 +52,18 @@ class MicroAppClass extends GreetingProps {
         confirmReload();
       }
     }, true);
-    let isConfirm = false;
+
+    let timer: number;
     function confirmReload() {
-      if (isConfirm) return;
-      isConfirm = true;
-      const is = confirm('当前系统代码有更新，请刷新页面');
-      if (is) {
-        window.location.reload();
+      if (timer) {
+        clearTimeout(timer);
       }
-      isConfirm = false;
+      timer = setTimeout(() => {
+        const is = confirm('当前系统代码有更新，请刷新页面');
+        if (is) {
+          window.location.reload();
+        }
+      }, 1000) as unknown as number;
     }
   }
 
