@@ -17,8 +17,8 @@ class ZMicroApp {
   module = false;
   // 是否支持沙箱
   isSandbox = false;
-  // 是否禁用样式沙箱
-  disableStyleSandbox = true;
+  // 是否启用样式沙箱
+  styleSandbox = true;
   // 外部链接
   externalLinks: string[] = [];
   // 缓存容器dom
@@ -59,7 +59,7 @@ class ZMicroApp {
       name: '',
       module: false,
       sandbox: false,
-      disableStyleSandbox: true,
+      styleSandbox: true,
       preload: false,
       externalLinks: []
     };
@@ -75,7 +75,7 @@ class ZMicroApp {
     this.isSandbox = _options.sandbox ? isSupportShadowDom() : false;
     this.module = _options.module || !isProd;
     this.externalLinks = _options.externalLinks || [];
-    this.disableStyleSandbox = _options.disableStyleSandbox;
+    this.styleSandbox = _options.styleSandbox;
     this.sandbox = new Sandbox(this);
     // 处理入口文件
     this.parseEntry();
@@ -112,7 +112,7 @@ class ZMicroApp {
   observerHeadFn() {
     const head = document.querySelector('head');
     const config = {attributes: false, childList: true, subtree: false};
-    const disableStyleSandbox = this.disableStyleSandbox;
+    const styleSandbox = this.styleSandbox;
     const callback = (mutationsList: MutationRecord[]) => {
       const linkHrefList: string[] = [];
       [...mutationsList].forEach(mutation => {
@@ -126,17 +126,17 @@ class ZMicroApp {
           const nodeName = node.nodeName;
           const id = Math.round((Math.random() * 1000)) + '-' + index + '-' + Date.now();
           (node as HTMLElement).id = id;
-          this.headAddStyleIds.push(id);
           switch (nodeName) {
             case 'STYLE': {
-              this.headAddStyleIds.push(id);
-              if (disableStyleSandbox !== true) {
+              if (styleSandbox === true) {
+                this.headAddStyleIds.push(id);
                 scopedCssStyle((node as HTMLStyleElement), this);
               }
               break;
             }
             case 'LINK': {
-              if (disableStyleSandbox !== true && (node as HTMLLinkElement).rel === 'stylesheet') {
+              if (styleSandbox === true && (node as HTMLLinkElement).rel === 'stylesheet') {
+                this.headAddStyleIds.push(id);
                 linkHrefList.push((node as HTMLLinkElement).href);
               }
               break;
@@ -145,15 +145,17 @@ class ZMicroApp {
         });
       });
 
-      setTimeout(() => {
-        for (let i = 0; i < document.styleSheets.length; i++) {
-          const styleSheet = document.styleSheets[i];
-          if (styleSheet.href && linkHrefList.includes(styleSheet.href)) {
-            styleSheet.disabled = true;
+      if (styleSandbox === true) {
+        setTimeout(() => {
+          for (let i = 0; i < document.styleSheets.length; i++) {
+            const styleSheet = document.styleSheets[i];
+            if (styleSheet.href && linkHrefList.includes(styleSheet.href)) {
+              styleSheet.disabled = true;
+            }
           }
-        }
-        scopedCssLink(linkHrefList, this);
-      }, 0);
+          scopedCssLink(linkHrefList, this);
+        }, 0);
+      }
     };
     if (head) {
       // @ts-ignore

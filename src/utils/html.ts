@@ -291,7 +291,7 @@ export function scopedCssLink(linkHrefList: string[], app: ZMicroApp) {
 function parseCssRules(cssRules:CSSRuleList, styleList: string[], app: ZMicroApp) {
   const name = app.name;
   const scopedName = app.scopedName;
-  const disableStyleSandbox = app.disableStyleSandbox;
+  const styleSandbox = app.styleSandbox;
   Array.from(cssRules).forEach(rule => {
     const type = rule.type;
     if (type === 4) { // @media 媒体查询
@@ -345,7 +345,7 @@ function parseCssRules(cssRules:CSSRuleList, styleList: string[], app: ZMicroApp
           cssText = cssText.replace(backgroundImage, newBackgroundImage);
         }
       }
-      if (disableStyleSandbox !== true) {
+      if (styleSandbox === true) {
         selectorText.split(',').forEach(select => {
           select = select.trim();
           // body、html选择器不设置作用域

@@ -42,7 +42,7 @@ declare module '@zxj/micro' {
    export type MircoAppOptions = {
       name: string;
       url: string;
-      disableStyleSandbox?: boolean;
+      styleSandbox?: boolean;
       externalLinks?: string[];
       module?: boolean;
       sandbox?: boolean;
