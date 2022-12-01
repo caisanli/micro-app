@@ -180,7 +180,7 @@ class ZMicroApp {
             if (!node) return;
             const nodeName = node.nodeName;
             if (nodeName === 'STYLE' || nodeName === 'IFRAME') return;
-            this.addNodes.push(node);
+            // this.addNodes.push(node);
             if ((node as HTMLElement).setAttribute) {
               (node as HTMLElement).setAttribute('name', 'zxj_micro_' + this.name);
             }
@@ -188,9 +188,9 @@ class ZMicroApp {
             console.log(error);
           }
         });
-        item.removedNodes.forEach(rnode => {
-          this.addNodes = this.addNodes.filter(node => node !== rnode);
-        });
+        // item.removedNodes.forEach(rnode => {
+        //   this.addNodes = this.addNodes.filter(node => node !== rnode);
+        // });
       });
     };
 
@@ -412,8 +412,7 @@ class ZMicroApp {
       // 清空动态添加的style元素
       this.clearHeadStyle();
     }
-    // 清空动态添加的元素
-    this.clearNodes();
+    //   this.clearNodes();
     // 触发unmount事件
     this.sandbox.sideEffect.evt.dispatch('unmount');
     // 清空blob url
