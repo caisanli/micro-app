@@ -127,9 +127,9 @@ class SideEffect {
     if (!this.active) {
       return ;
     }
-    this.active = false;
     // 清空事件处理器
     this.evt.clear();
+    this.active = false;
     Object.keys(this.listeners).forEach(key => {
       const listeners = this.listeners[key];
       listeners.forEach(item => {
