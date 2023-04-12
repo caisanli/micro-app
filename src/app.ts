@@ -52,6 +52,8 @@ class ZMicroApp {
   addNodes: Node[] = [];
   // 预加载完后，须立即执行
   preloadedNeedImplement: boolean = false;
+  // 挂载完后的回调函数
+  mountCallback?: MircoAppOptions['callback']
 
   constructor(options: MircoAppOptions) {
     const defaultOpt: MircoAppOptions = {
@@ -72,6 +74,7 @@ class ZMicroApp {
     this.url = getUrl(_options.url);
     this.origin = getUrlOrigin(this.url);
     this.scopedName = 'zxj_micro_' + name;
+    this.mountCallback = options.callback;
     this.isSandbox = _options.sandbox ? isSupportShadowDom() : false;
     this.module = _options.module || !isProd;
     this.externalLinks = _options.externalLinks || [];
@@ -389,9 +392,18 @@ class ZMicroApp {
    * 触发mount事件
    */
   emitMount() {
-    this.sandbox.sideEffect.evt.dispatch('mount');
+    this.dispatch('mount');
+    this.mountCallback && this.mountCallback()
   }
 
+  /**
+   * 触发事件
+   * @param evt
+   * @param data
+   */
+  dispatch(evt: string, data?: unknown) {
+    this.sandbox.sideEffect.evt.dispatch(evt, data);
+  }
   /**
    * 清空生成的blob url
    */
@@ -414,7 +426,7 @@ class ZMicroApp {
     }
     //   this.clearNodes();
     // 触发unmount事件
-    this.sandbox.sideEffect.evt.dispatch('unmount');
+    this.dispatch('unmount');
     // 清空blob url
     this.clearBlobUrls();
     if (!this.moduleCount) {

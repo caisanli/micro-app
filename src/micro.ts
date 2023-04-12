@@ -20,13 +20,21 @@ const GreetingProps = Vue.extend({
     // 是否支持 module
     module: Boolean,
     // 是否开启沙箱 默认 false
-    sandbox: Boolean
+    sandbox: Boolean,
+    // 自定义数据
+    customData: Object
   }
 });
 
 const NEED_UPDATE_SOURCE_MSG = 'Uncaught SyntaxError: Unexpected token \'<\'';
 
-@Component
+@Component({
+  watch: {
+    customData(data: unknown) {
+      this.app.dispatch('custom-data', data);
+    }
+  }
+})
 class MicroAppClass extends GreetingProps {
 
   app: ZMicroApp | null = null;
@@ -67,6 +75,14 @@ class MicroAppClass extends GreetingProps {
     }
   }
 
+  /**
+   * 触发消息
+   * @param data
+   */
+  dispatch(data: unknown) {
+    this.app.dispatch('data', data);
+  }
+
   mounted() {
     const { name, url, styleSandbox, externalLinks, module, sandbox } = this;
     if(!name || !url) return ;
@@ -83,7 +99,11 @@ class MicroAppClass extends GreetingProps {
         styleSandbox,
         externalLinks: externalLinks as string[],
         module,
-        sandbox
+        sandbox,
+        callback: () => {
+          this.$emit('mount');
+          this.app.dispatch('custom-data', this.customData);
+        }
       });
       cache[name] = this.app;
     }

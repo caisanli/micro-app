@@ -47,6 +47,7 @@ declare module '@zxj/micro' {
       module?: boolean;
       sandbox?: boolean;
       preload?: boolean;
+      callback?: () => void;
    }
 
    /**
