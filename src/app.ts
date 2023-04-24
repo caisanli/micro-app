@@ -337,7 +337,7 @@ class ZMicroApp {
   /**
    * 挂载
    */
-  mount() {
+  mount(callback?: MircoAppOptions['callback']) {
     // 如果还在预加载中
     if (this.status === 'preloading') {
       // 就设置预加载完成后立即执行
@@ -371,11 +371,11 @@ class ZMicroApp {
           // 执行script代码
           this.execScript(this.scripts, () => {
             // 触发mount事件
-            this.emitMount();
+            this.emitMount(callback);
           });
         } else {
           // 触发mount事件
-          this.emitMount();
+          this.emitMount(callback);
         }
 
         // 监听head
@@ -391,9 +391,13 @@ class ZMicroApp {
   /**
    * 触发mount事件
    */
-  emitMount() {
+  emitMount(callback?: MircoAppOptions['callback']) {
     this.dispatch('mount');
-    this.mountCallback && this.mountCallback()
+    if (callback) {
+      callback()
+    } else if(this.mountCallback) {
+      this.mountCallback()
+    }
   }
 
   /**

@@ -91,7 +91,9 @@ class MicroAppClass extends GreetingProps {
     const app = cache[name];
     if (app) { // 存在实例，就挂载
       this.app = app;
-      this.app.mount();
+      this.app.mount(() => {
+        this.emitLoaded();
+      });
     } else { // 不存在实例，就初始化
       this.app = new ZMicroApp({
         name,
@@ -101,12 +103,16 @@ class MicroAppClass extends GreetingProps {
         module,
         sandbox,
         callback: () => {
-          this.$emit('mount');
-          this.app.dispatch('custom-data', this.customData);
+          this.emitLoaded();
         }
       });
       cache[name] = this.app;
     }
+  }
+
+  emitLoaded() {
+    this.$emit('loaded');
+    this.app.dispatch('custom-data', this.customData);
   }
 
   // 兼容vue3
