@@ -90,8 +90,12 @@ class Event {
 
     // 是子系统在触发事件
     // 可能需要触发主系统绑定的事件
-    const newName = name.replace(/^(\w+-)/, MAIN_PREFIX);
-    this.dispatch(newName, data, true);
+    Object.keys(this.child).forEach(prefix => {
+      const reg = new RegExp(prefix);
+      const newName = name.replace(reg, MAIN_PREFIX);
+      this.dispatch(newName, data, true);
+    });
+
   }
 
   /**
