@@ -68,6 +68,7 @@ class SideEffect {
           eventInstance.off(key);
         });
         this.evtListenerTypes = {};
+        eventInstance.clear();
       }
     };
     // 记录绑定自定义事件
