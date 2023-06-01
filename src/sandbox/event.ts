@@ -93,9 +93,11 @@ class Event {
     Object.keys(this.child).forEach(prefix => {
       const reg = new RegExp(prefix);
       const newName = name.replace(reg, MAIN_PREFIX);
-      this.dispatch(newName, data, true);
+      // 判断更换后的 name，有没有主系统的前缀，没有就不是主系统的事件名称
+      if (newName.startsWith(MAIN_PREFIX)) {
+        this.dispatch(newName, data, true);
+      }
     });
-
   }
 
   /**
