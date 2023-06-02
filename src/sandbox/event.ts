@@ -103,9 +103,15 @@ class Event {
   /**
    * 清空事件
    */
-  clear() {
+  clear(prefix?: string) {
     Object.keys(this.event).forEach(key => {
-      this.off(key);
+      if (prefix) {
+        if (key.startsWith(prefix)) {
+          this.off(key);
+        }
+      } else {
+        this.off(key);
+      }
     });
   }
 }
@@ -128,6 +134,10 @@ class BaseAppEvent {
 
   dispatch(key: string, data?: EventDataType) {
     newEvent.dispatch(MAIN_PREFIX + key, data);
+  }
+
+  clear() {
+    newEvent.clear(MAIN_PREFIX);
   }
 }
 
