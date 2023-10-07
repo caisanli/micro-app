@@ -12,15 +12,15 @@
 </template>
 
 <script>
-/* eslint-disable */
+// /* eslint-disable */
 import MicroApp, { baseAppEvent } from '../../../../src/index';
-
-baseAppEvent.on('child', (data) => {
-  alert('主系统收到子系统消息：' + data);
-});
+//
+// baseAppEvent.on('child', (data) => {
+//   alert('主系统收到子系统消息：' + data);
+// });
 export default {
   components: {
-    MicroApp,
+    // MicroApp,
   },
   methods: {
     // 主系统向子系统发消息

@@ -7,10 +7,12 @@ import router from './router';
 import App from './App.vue'
 import antv from 'ant-design-vue';
 import 'ant-design-vue/dist/antd.css';
-import system from './config/system'
-import { setPreload } from '../../../src/index';
+// import system from './config/system'
+import { setPreload, start } from '../../../src/index';
+//
+// setPreload([system.vue3, system.vue2, system.vite])
 
-setPreload([system.vue3, system.vue2, system.vite])
+start();
 
 Vue.use(antv)
 
