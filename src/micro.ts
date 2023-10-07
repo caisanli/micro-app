@@ -2,93 +2,42 @@
  * 创建Vue MicroApp组件
  */
 import ZMicroApp from './app';
-import cache, { global, MICRO_APP_NAME } from './utils/cache';
+import cache, { global } from './utils/cache';
+import Vue from 'vue';
+import type { CreateElement, VNode } from 'vue';
+import Component from 'vue-class-component';
+
+const GreetingProps = Vue.extend({
+  props: {
+    // 全局唯一
+    name: String,
+    // 子系统入口文件地址（index.html）
+    url: String,
+    // 是否启用样式沙箱 默认值（true）
+    styleSandbox: Boolean,
+    // externalLinks 外部链接不处理
+    externalLinks: Array,
+    // 是否支持 module
+    module: Boolean,
+    // 是否开启沙箱 默认 false
+    sandbox: Boolean,
+    // 自定义数据
+    customData: Object
+  }
+});
 
 const NEED_UPDATE_SOURCE_MSG = 'Uncaught SyntaxError: Unexpected token \'<\'';
 
-/**
- * 自定义元素 MicroAppElement
- */
-class MicroAppElement extends HTMLElement {
-  // 全局唯一
-  name?: string;
-  // 子系统入口文件地址（index.html）
-  url?: string;
-  // 是否启用样式沙箱 默认值（true）
-  styleSandbox?: boolean;
-  // externalLinks 外部链接不处理
-  // externalLinks?: string[];
-  // 是否支持 module
-  module?: boolean;
-  // 是否开启沙箱 默认 false
-  sandbox?: boolean;
-  // 自定义数据
-  // customData?: Record<string | number, unknown>;
-
-  app?: ZMicroApp;
-
-  constructor() {
-    super();
-  }
-
-  /**
-   * 初始化配置
-   */
-  initConfig() {
-    this.name = this.getAttribute('name') || '';
-    this.url = this.getAttribute('url') || '';
-    this.styleSandbox = this.getAttribute('styleSandbox') === 'false';
-    // this.externalLinks = this.getAttribute('externalLinks');
-    this.module = this.getAttribute('module') === 'true';
-    this.sandbox = this.getAttribute('sandbox') === 'true';
-    // this.customData = this.getAttribute('customData');
-  }
-
-  /**
-   * 创建 Dom
-   */
-  create() {
-    const shadowRoot = this.attachShadow({ mode: 'open' });
-    const div = document.createElement('div');
-    const id = `zxj_micro-${ this.name }`;
-    div.id = id;
-    div.setAttribute('name', id);
-    shadowRoot.append(div);
-  }
-
-  initApp() {
-    const { name, url, styleSandbox, module, sandbox } = this;
-    if (!name || !url) {
-      throw Error('缺少 micro-app 必要的属性：name、url');
-    }
-    this.bindGlobalEvent();
-    // 从缓存中取子系统实例
-    const app = cache[name];
-    if (app) { // 存在实例，就挂载
-      this.app = app;
-      this.app.mount(() => {
-        this.emitLoaded();
-      });
-    } else { // 不存在实例，就初始化
-      this.app = new ZMicroApp({
-        name,
-        url,
-        styleSandbox,
-        // externalLinks: externalLinks as string[],
-        module,
-        sandbox,
-        callback: () => {
-          this.emitLoaded();
-        }
-      });
-      cache[name] = this.app;
+@Component({
+  watch: {
+    customData(data: unknown) {
+      this.app.dispatch('custom-data', data);
     }
   }
+})
+class MicroAppClass extends GreetingProps {
 
-  emitLoaded() {
-    console.warn('未实现 emitLoad 方法');
-    // this.app && this.app.dispatch('custom-data', this.customData);
-  }
+  app: ZMicroApp | null = null;
 
   bindGlobalEvent() {
     if (global.isBindGlobalEvent) return;
@@ -127,29 +76,65 @@ class MicroAppElement extends HTMLElement {
   }
 
   /**
-   * 插入页面
+   * 触发消息
+   * @param data
    */
-  connectedCallback() {
-    this.initConfig();
-    this.create();
-    this.initApp();
+  dispatch(data: unknown) {
+    this.app.dispatch('data', data);
   }
 
-  /**
-   * 元素被删除
-   */
-  disconnectedCallback() {
+  mounted() {
+    const { name, url, styleSandbox, externalLinks, module, sandbox } = this;
+    if(!name || !url) return ;
+    this.bindGlobalEvent();
+    // 从缓存中取子系统实例
+    const app = cache[name];
+    if (app) { // 存在实例，就挂载
+      this.app = app;
+      this.app.mount(() => {
+        this.emitLoaded();
+      });
+    } else { // 不存在实例，就初始化
+      this.app = new ZMicroApp({
+        name,
+        url,
+        styleSandbox,
+        externalLinks: externalLinks as string[],
+        module,
+        sandbox,
+        callback: () => {
+          this.emitLoaded();
+        }
+      });
+      cache[name] = this.app;
+    }
+  }
+
+  emitLoaded() {
+    this.$emit('loaded');
+    this.app.dispatch('custom-data', this.customData);
+  }
+
+  // 兼容vue3
+  beforeUnmount() {
+    // 取消挂载
     this.app && this.app.unmount();
   }
+
+  beforeDestroy() {
+    // 取消挂载
+    this.app && this.app.unmount();
+  }
+
+  render(h: CreateElement):VNode {
+    const name = this.name;
+    return h('div', {
+      attrs: {  // 生成唯一属性
+        id: `zxj_micro-${name}`,
+        name: `zxj_micro_${name}`
+      }
+    });
+  }
 }
 
-/**
- * 开始生成自定义元素
- */
-function start() {
-  customElements.define(MICRO_APP_NAME, MicroAppElement);
-}
-
-export {
-  start
-};
+export default MicroAppClass;

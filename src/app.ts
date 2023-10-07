@@ -5,7 +5,6 @@ import Sandbox from './sandbox/index';
 // @ts-ignore
 import _JsMutationObserver from './utils/MutationObserver';
 import type { MicroAppStatus, MircoAppOptions, ScriptItem, LinkItem } from '@zxj/micro';
-import { MICRO_APP_NAME } from './utils/cache';
 
 class ZMicroApp {
   // 状态
@@ -19,7 +18,7 @@ class ZMicroApp {
   // 是否支持沙箱
   isSandbox = false;
   // 是否启用样式沙箱
-  styleSandbox: undefined | boolean = true;
+  styleSandbox = true;
   // 外部链接
   externalLinks: string[] = [];
   // 缓存容器dom
@@ -76,7 +75,7 @@ class ZMicroApp {
     this.origin = getUrlOrigin(this.url);
     this.scopedName = 'zxj_micro_' + name;
     this.mountCallback = options.callback;
-    // this.isSandbox = _options.sandbox ? isSupportShadowDom() : false;
+    this.isSandbox = _options.sandbox ? isSupportShadowDom() : false;
     this.module = _options.module || !isProd;
     this.externalLinks = _options.externalLinks || [];
     this.styleSandbox = _options.styleSandbox;
@@ -89,17 +88,23 @@ class ZMicroApp {
    * 插入子系统html内容
    */
   insertHtml() {
-    const shadowRoot = document.querySelector(`${ MICRO_APP_NAME }[name="${ this.name }"]`)?.shadowRoot || null;
-    const el = shadowRoot?.getElementById(`zxj_micro-${ this.name }`);
-    if (!el) return ;
-    this.el = el;
+    this.el = document.getElementById(`zxj_micro-${ this.name }`);
+    const el = this.el;
     const fragment = document.createDocumentFragment();
     const cloneContainer = this.container?.cloneNode(true);
     Array.from(cloneContainer?.childNodes || []).forEach(node => {
       fragment.appendChild(node);
     });
-    el.appendChild(fragment)
-    this.shadowEl = shadowRoot;
+    if (!el) return ;
+
+    if (this.isSandbox) {
+      const shadow = el.attachShadow({ mode: 'open' })
+      shadow.appendChild(fragment)
+      this.shadowEl = shadow;
+    } else {
+      el.appendChild(fragment)
+      this.shadowEl = el;
+    }
   }
 
   /**

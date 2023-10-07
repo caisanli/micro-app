@@ -1,4 +1,7 @@
 declare module '@zxj/micro' {
+   import type { PluginOption } from 'vite';
+   import type { Component } from 'vue';
+
    export type ProxyWindow = Window;
 
    type EventDataType = unknown;
@@ -13,7 +16,7 @@ declare module '@zxj/micro' {
 
    export interface MicroAppEvent {
       on: (type: string, callback?: EventCallback) => void;
-      dispatch: (type: string, data?: unknown) => void;
+      dispatch: (type: string, data?: DataType) => void;
       off: (type: string, callback?: EventCallback) => void;
       clear: () => void;
    }
@@ -60,5 +63,7 @@ declare module '@zxj/micro' {
 
    export type setPreload = (apps: MircoAppOptions | MircoAppOptions[]) => void;
 
-   export type start = () => void;
+   export type MicroApp = Component
+
+   export function microAppVitePlugin (): PluginOption;
 }
