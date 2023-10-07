@@ -276,6 +276,7 @@ export function scopedCssLink(linkHrefList: string[], app: ZMicroApp) {
       const style = document.createElement('style');
       style.setAttribute('data-micro', app.name);
       style.textContent = text;
+      // @ts-ignore
       style.disabled = true;
       document.head.appendChild(style);
     });
