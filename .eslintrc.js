@@ -8,7 +8,8 @@ module.exports = {
     'indent': ['error', 2],
     'semi': ['error', 'always'],
     'quotes': ['error', 'single'],
-    '@typescript-eslint/no-var-requires': ['off']
+    '@typescript-eslint/no-var-requires': ['off'],
+    '@typescript-eslint/ban-ts-comment': ['off']
   },
   parserOptions: {
     'ecmaVersion': 6,
