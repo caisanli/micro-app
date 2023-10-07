@@ -4,11 +4,11 @@
 </template>
 
 <script>
-// /* eslint-disable */
-// import MicroApp from '../../../../src/index';
+/* eslint-disable */
+import MicroApp from '../../../../src/index';
 export default {
   components: {
-    // MicroApp,
+    MicroApp,
   },
   data() {
     return {
